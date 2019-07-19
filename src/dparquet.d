@@ -1,33 +1,41 @@
 module dparquet;
 
 private{
-import arrow.Field : ArrowField = Field;
+import arrow.Array;
+import arrow.c.types;
+import arrow.c.functions;
 import arrow.ChunkedArray;
 import arrow.Column;
-import arrow.Int32Array;
-import arrow.Int64Array;
-import arrow.FloatArray;
 import arrow.DoubleArray;
-import arrow.StringArray;
-import arrow.Int64ArrayBuilder;
-import arrow.Int32ArrayBuilder;
+import arrow.Field : ArrowField = Field;
+import arrow.FloatArray;
 import arrow.FloatArrayBuilder;
-import arrow.StringArrayBuilder;
-import arrow.ListArrayBuilder;
+import arrow.FloatDataType;
+import arrow.Int32Array;
+import arrow.Int32ArrayBuilder;
+import arrow.Int64Array;
+import arrow.Int64ArrayBuilder;
 import arrow.Int32DataType;
 import arrow.Int64DataType;
-import arrow.StringDataType;
-import arrow.FloatDataType;
+import arrow.ListArrayBuilder;
 import arrow.ListDataType;
+import arrow.StringArray;
+import arrow.StringArrayBuilder;
+import arrow.StringDataType;
 import arrow.Schema : ArrowSchema = Schema;
 import arrow.ListArray;
+import glib.c.functions;
 import glib.ListG;
+import gobject.c.functions;
 import gobject.ObjectG;
 import parquet.ArrowFileReader : ArrowFileReader;
 
 import std.algorithm : canFind;
+import std.bitmanip;
 import std.traits : isArray, isSomeString, fullyQualifiedName;
 import std.range.primitives : ElementType;
+import std.system;
+
 }
 
 
@@ -53,6 +61,17 @@ template CastTypeArray(T)
     static if(is(T == float)) alias CastTypeArray = FloatArray;
     static if(is(T == double)) alias CastTypeArray = DoubleArray;
     static if(is(T == string)) alias CastTypeArray = StringArray;
+    static if(is(T == char[])) alias CastTypeArray = StringArray;
+}
+
+template CastTypeGArray(T)
+{
+    static if(is(T == long)) alias CastTypeGArray = GArrowInt64Array;
+    static if(is(T == int)) alias CastTypeGArray = GArrowInt32Array;
+    static if(is(T == float)) alias CastTypeGArray = GArrowFloatArray;
+    static if(is(T == double)) alias CastTypeGArray = GArrowDoubleArray;
+    static if(is(T == string)) alias CastTypeGArray = GArrowBinaryArray;
+    static if(is(T == char[])) alias CastTypeGArray = GArrowBinaryArray;
 }
 
 template CastTypeArrayBuilder(T)
@@ -105,81 +124,162 @@ public class ParquetFile {
         if(!col_names.canFind(name))
             throw new Exception("Unknown column name:" ~ name);
         auto col = _fr.readColumn(_name2index[name]);
-        return ColumnValues(col).get_values!T();
+        return ColumnValues.get_values!T(col);
     }
 }
 
 
 private struct ColumnValues {
-
-    Column _col;
-    ChunkedArray _ca;
-
-    this(Column col)
+    static T[] get_values(T)(Column col)
     {
-        _col = col;
-        _ca = col.getData();
-    }
+        auto ca = garrow_column_get_data(col.getColumnStruct);
+        auto n_chunks = garrow_chunked_array_get_n_chunks(ca);
 
-    T[] get_values(T)()
-    {
         T[] res;
         
         static if (!isArray!T && !isSomeString!T)
         {
-            alias CT = CastTypeArray!T;
-            foreach(ci; 0.._ca.getNChunks())
-                res ~= (cast(CT)_ca.getChunk(ci)).getValues();
+            alias CT = CastTypeGArray!T;
+            foreach(ci; 0..n_chunks)
+            {
+                auto chunk = garrow_chunked_array_get_chunk(ca, ci);
+                auto chunk_len = garrow_array_get_length(chunk);
+                auto offset = res.length;
+                res.length += chunk_len;
+                res[offset..offset+chunk_len] = getArrayBasicValues!(T, CT)(cast(CT*)chunk); // double copy?	
+                g_object_unref(chunk);
+            }
         }
         static if(isSomeString!T)
         {
-            foreach(ci; 0.._ca.getNChunks())
+            alias CT = CastTypeGArray!T;
+            foreach(ci; 0..n_chunks)
             {
-                auto chunk = cast(StringArray)_ca.getChunk(ci);
-                foreach(j; 0..chunk.getLength())
-                    res ~= cast(T)chunk.getString(j);
+                auto chunk = garrow_chunked_array_get_chunk(ca, ci);
+                auto chunk_len = garrow_array_get_length(chunk);
+                auto offset = res.length;
+                res.length += chunk_len;
+                res[offset..offset+chunk_len] = getArrayBasicValues!(T, CT)(cast(CT*)chunk); // double copy?	
+                g_object_unref(chunk);
             }
         }
         static if(isArray!T && !isSomeString!T)
         {
-            alias ET = ElementType!T;
-            static if (isArray!ET && !isSomeString!ET)
+            foreach(ci; 0..n_chunks)
             {
-                alias EET = ElementType!ET;
-                alias CT = CastTypeArray!EET;
-                foreach(ci; 0.._ca.getNChunks())
-                {
-                    auto chunk = cast(ListArray)_ca.getChunk(ci);
-                    foreach(j; 0..chunk.getLength())
-                    {
-                        T v;
-                        auto subarray = (cast(ListArray)chunk.getValue(j));
-                        foreach(k; 0..subarray.getLength())
-                            v~= (cast(CT)subarray.getValue(k)).getValues();
-                        res ~= v;
-                    }
-                }
-
-            }
-            else
-            {
-                alias CT = CastTypeArray!ET;
-                foreach(ci; 0.._ca.getNChunks())
-                {
-                    auto chunk = cast(ListArray)_ca.getChunk(ci);
-                    foreach(j; 0..chunk.getLength())
-                    {
-                        T v;
-                        auto arrStr = cast(CT)chunk.getValue(j);
-                        foreach(k; 0..arrStr.getLength())
-                            v ~= cast(ET)arrStr.getString(k);
-                        res ~= v;
-                    }
-                }
+                auto chunk = garrow_chunked_array_get_chunk(ca, ci);
+                auto chunk_len = garrow_array_get_length(chunk);
+                auto offset = res.length;
+                res.length += chunk_len;
+                foreach(j; 0..chunk_len)
+                    res[offset + j] = getArrayValue!(ElementType!T)(cast(GArrowListArray*)chunk, j);
+                g_object_unref(chunk);
             }
         }
+        g_object_unref(ca);
         return res;
     }
+}
+
+/*
+Extract an array value out of a GArrowListArray and build
+a D array out of it. Works for basic array types as well
+as nested arrays through recursion.
+*/
+private T[] getArrayValue(T)(GArrowListArray* arr, long i)
+{
+    static if(!isSomeString!T && isArray!T)
+    {
+        // recurse
+        alias ET = ElementType!T;
+	    auto g_arr = cast(GArrowListArray*)garrow_list_array_get_value(arr, i);
+        
+        auto len = garrow_array_get_length(cast(GArrowArray*)g_arr);
+        auto res = new T[len];
+        foreach(k; 0..len)
+            res[k] = getArrayValue!ET(g_arr, k);
+        g_object_unref(g_arr);
+        return res;
+    }
+    else
+    {
+        alias CT = CastTypeGArray!T;
+	    auto g_arr = cast(CT*)garrow_list_array_get_value(arr, i);
+        auto res = getArrayBasicValues!(T, CT)(g_arr);
+        g_object_unref(g_arr);
+        return res;
+    }
+}
+
+private T[] getArrayBasicValues(T, U)(U* arr)
+{
+    static if(isSomeString!T)
+    {
+        auto len = garrow_array_get_length(cast(GArrowArray*)arr);
+        auto res = new T[len];
+        foreach(k; 0..len)
+        {
+            auto gBytes = cast(GBytes*)garrow_binary_array_get_value(arr, k);
+            size_t str_len;
+            auto p = g_bytes_get_data(gBytes, &str_len);
+            res[k] = cast(T)p[0 .. str_len].dup; //copy
+            g_bytes_unref(gBytes);
+        }
+        return res;
+        //return getArrayBasicStringValuesFast!(T, U)(arr);
+    }
+    else
+    {
+        long length;
+        static if(is(T == long))
+            auto p = garrow_int64_array_get_values(arr, &length);
+        static if(is(T == int))
+            auto p = garrow_int32_array_get_values(arr, &length);
+        static if(is(T == float))
+            auto p = garrow_float_array_get_values(arr, &length);
+        static if(is(T == double))
+            auto p = garrow_double_array_get_values(arr, &length);
+        return p[0..length].dup; // copy
+    }
+}
+
+private T[] getArrayBasicStringValuesFast(T, U)(U* arr) if(isSomeString!T) 
+{
+    auto len = garrow_array_get_length(cast(GArrowArray*)arr);
+    auto res = new T[len];
+
+    long offset = garrow_array_get_offset(cast(GArrowArray*)arr);
+
+    auto buff = garrow_binary_array_get_buffer(arr);
+    auto bytes_buff = garrow_buffer_get_data(buff);
+    size_t size1;
+    auto p1 = g_bytes_get_data(bytes_buff, &size1);
+    auto bytes_data = cast(ubyte[])p1[0 .. size1];
+
+    auto offset_buff = garrow_binary_array_get_offsets_buffer(arr);
+    auto bytes_offset_buff = garrow_buffer_get_data(offset_buff);
+    size_t size2;
+    auto p2 = g_bytes_get_data(bytes_offset_buff, &size2);
+    auto bytes_offsets = cast(ubyte[])p2[0 .. size2];
+
+    foreach(j; 0..len)
+    {
+        auto ind = j + offset;
+        auto pos = peek!(int, Endian.littleEndian)
+            (bytes_offsets[4 * ind .. 4 * ind + 4]);
+        auto len_str = peek!(int, Endian.littleEndian)
+            (bytes_offsets[4 * (ind + 1) .. 4 * (ind + 1) + 4]) - pos;
+        res[j] = cast(T)bytes_data[pos.. pos + len_str].dup;
+    }
+    // TODO: fix leak
+    g_bytes_unref(cast(GBytes*)p1);
+    g_bytes_unref(bytes_buff);
+    g_object_unref(buff);
+    g_bytes_unref(cast(GBytes*)p2);
+    g_bytes_unref(bytes_offset_buff);
+    g_object_unref(offset_buff);
+
+    return res;
 }
 
 class ColumnBuilder(T) {
