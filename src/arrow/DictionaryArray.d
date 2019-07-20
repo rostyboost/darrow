@@ -6,6 +6,8 @@ private import arrow.DictionaryDataType;
 private import arrow.c.functions;
 public  import arrow.c.types;
 private import glib.ConstructionException;
+private import glib.ErrorG;
+private import glib.GException;
 private import gobject.ObjectG;
 
 
@@ -48,17 +50,27 @@ public class DictionaryArray : Array
 	/**
 	 *
 	 * Params:
-	 *     dataType = The data type of dictionary.
+	 *     dataType = The data type of the dictionary array.
 	 *     indices = The indices of values in dictionary.
-	 * Returns: A newly created #GArrowDictionaryArray.
+	 *     dictionary = The dictionary of the dictionary array.
+	 * Returns: A newly created #GArrowDictionaryArray
+	 *     or %NULL on error.
 	 *
 	 * Since: 0.8.0
 	 *
+	 * Throws: GException on failure.
 	 * Throws: ConstructionException GTK+ fails to create the object.
 	 */
-	public this(DataType dataType, Array indices)
+	public this(DataType dataType, Array indices, Array dictionary)
 	{
-		auto p = garrow_dictionary_array_new((dataType is null) ? null : dataType.getDataTypeStruct(), (indices is null) ? null : indices.getArrayStruct());
+		GError* err = null;
+
+		auto p = garrow_dictionary_array_new((dataType is null) ? null : dataType.getDataTypeStruct(), (indices is null) ? null : indices.getArrayStruct(), (dictionary is null) ? null : dictionary.getArrayStruct(), &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
 
 		if(p is null)
 		{

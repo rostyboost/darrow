@@ -1,6 +1,8 @@
 module arrow.Int8Array;
 
+private import arrow.BooleanArray;
 private import arrow.Buffer;
+private import arrow.CompareOptions;
 private import arrow.NumericArray;
 private import arrow.c.functions;
 public  import arrow.c.types;
@@ -73,6 +75,38 @@ public class Int8Array : NumericArray
 		}
 
 		this(cast(GArrowInt8Array*) p, true);
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     value = The value to compare.
+	 *     options = A #GArrowCompareOptions.
+	 * Returns: The #GArrowBooleanArray as
+	 *     the result compared a numeric array with a scalar on success,
+	 *     %NULL on error.
+	 *
+	 * Since: 0.14.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public BooleanArray compare(byte value, CompareOptions options)
+	{
+		GError* err = null;
+
+		auto p = garrow_int8_array_compare(gArrowInt8Array, value, (options is null) ? null : options.getCompareOptionsStruct(), &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(BooleanArray)(cast(GArrowBooleanArray*) p, true);
 	}
 
 	/**

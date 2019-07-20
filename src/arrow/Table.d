@@ -254,6 +254,35 @@ public class Table : ObjectG
 	/**
 	 *
 	 * Params:
+	 *     otherTables = The tables to be concatenated.
+	 * Returns: The table concatenated vertically.
+	 *
+	 * Since: 0.14.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public Table concatenate(ListG otherTables)
+	{
+		GError* err = null;
+
+		auto p = garrow_table_concatenate(gArrowTable, (otherTables is null) ? null : otherTables.getListGStruct(), &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(Table)(cast(GArrowTable*) p, true);
+	}
+
+	/**
+	 *
+	 * Params:
 	 *     otherTable = A #GArrowTable to be compared.
 	 * Returns: %TRUE if both of them have the same data, %FALSE
 	 *     otherwise.
@@ -367,6 +396,31 @@ public class Table : ObjectG
 		{
 			throw new GException( new ErrorG(err) );
 		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(Table)(cast(GArrowTable*) p, true);
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     offset = The offset of sub #GArrowTable. If the offset is negative,
+	 *         the offset is counted from the last.
+	 *     length = The length of sub #GArrowTable.
+	 * Returns: The sub #GArrowTable. It covers
+	 *     only from `offset` to `offset + length` range. The sub
+	 *     #GArrowTable shares values with the base
+	 *     #GArrowTable.
+	 *
+	 * Since: 0.14.0
+	 */
+	public Table slice(long offset, long length)
+	{
+		auto p = garrow_table_slice(gArrowTable, offset, length);
 
 		if(p is null)
 		{

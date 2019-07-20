@@ -3,11 +3,11 @@ module parquet.c.functions;
 import std.stdio;
 import parquet.c.types;
 version (Windows)
-	static immutable LIBRARY_PARQUET = ["glib-13.dll", "glib-13.dll"];
+	static immutable LIBRARY_PARQUET = ["glib-14.dll"];
 else version (OSX)
-	static immutable LIBRARY_PARQUET = ["glib.13.dylib", "glib.13.dylib"];
+	static immutable LIBRARY_PARQUET = ["glib.14.dylib"];
 else
-	static immutable LIBRARY_PARQUET = ["libarrow-glib.so.13", "libparquet-glib.so.13"];
+	static immutable LIBRARY_PARQUET = ["libparquet-glib.so.14"];
 
 __gshared extern(C)
 {

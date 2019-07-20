@@ -2,6 +2,7 @@ module arrow.SparseUnionArray;
 
 private import arrow.Array;
 private import arrow.Int8Array;
+private import arrow.SparseUnionDataType;
 private import arrow.UnionArray;
 private import arrow.c.functions;
 public  import arrow.c.types;
@@ -76,6 +77,40 @@ public class SparseUnionArray : UnionArray
 		if(p is null)
 		{
 			throw new ConstructionException("null returned by new");
+		}
+
+		this(cast(GArrowSparseUnionArray*) p, true);
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     dataType = The data type for the sparse array.
+	 *     typeIds = The field type IDs for each value as #GArrowInt8Array.
+	 *     fields = The arrays for each field
+	 *         as #GList of #GArrowArray.
+	 * Returns: A newly created #GArrowSparseUnionArray
+	 *     or %NULL on error.
+	 *
+	 * Since: 0.14.0
+	 *
+	 * Throws: GException on failure.
+	 * Throws: ConstructionException GTK+ fails to create the object.
+	 */
+	public this(SparseUnionDataType dataType, Int8Array typeIds, ListG fields)
+	{
+		GError* err = null;
+
+		auto p = garrow_sparse_union_array_new_data_type((dataType is null) ? null : dataType.getSparseUnionDataTypeStruct(), (typeIds is null) ? null : typeIds.getInt8ArrayStruct(), (fields is null) ? null : fields.getListGStruct(), &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			throw new ConstructionException("null returned by new_data_type");
 		}
 
 		this(cast(GArrowSparseUnionArray*) p, true);

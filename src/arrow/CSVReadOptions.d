@@ -79,6 +79,18 @@ public class CSVReadOptions : ObjectG
 		garrow_csv_read_options_add_column_type(gArrowCSVReadOptions, Str.toStringz(name), (dataType is null) ? null : dataType.getDataTypeStruct());
 	}
 
+	/** */
+	public void addFalseValue(string falseValue)
+	{
+		garrow_csv_read_options_add_false_value(gArrowCSVReadOptions, Str.toStringz(falseValue));
+	}
+
+	/** */
+	public void addNullValue(string nullValue)
+	{
+		garrow_csv_read_options_add_null_value(gArrowCSVReadOptions, Str.toStringz(nullValue));
+	}
+
 	/**
 	 * Add value types for columns in the schema.
 	 *
@@ -90,6 +102,12 @@ public class CSVReadOptions : ObjectG
 	public void addSchema(Schema schema)
 	{
 		garrow_csv_read_options_add_schema(gArrowCSVReadOptions, (schema is null) ? null : schema.getSchemaStruct());
+	}
+
+	/** */
+	public void addTrueValue(string trueValue)
+	{
+		garrow_csv_read_options_add_true_value(gArrowCSVReadOptions, Str.toStringz(trueValue));
 	}
 
 	/**
@@ -107,5 +125,68 @@ public class CSVReadOptions : ObjectG
 		}
 
 		return new HashTable(cast(GHashTable*) p, true);
+	}
+
+	/**
+	 * Returns: The values to be processed as false. It's a %NULL-terminated string array.
+	 *     If the number of values is zero, this returns %NULL.
+	 *     It must be freed with g_strfreev() when no longer needed.
+	 *
+	 * Since: 0.14.0
+	 */
+	public string[] getFalseValues()
+	{
+		auto retStr = garrow_csv_read_options_get_false_values(gArrowCSVReadOptions);
+
+		scope(exit) Str.freeStringArray(retStr);
+		return Str.toStringArray(retStr);
+	}
+
+	/**
+	 * Returns: The values to be processed as null. It's a %NULL-terminated string array.
+	 *     If the number of values is zero, this returns %NULL.
+	 *     It must be freed with g_strfreev() when no longer needed.
+	 *
+	 * Since: 0.14.0
+	 */
+	public string[] getNullValues()
+	{
+		auto retStr = garrow_csv_read_options_get_null_values(gArrowCSVReadOptions);
+
+		scope(exit) Str.freeStringArray(retStr);
+		return Str.toStringArray(retStr);
+	}
+
+	/**
+	 * Returns: The values to be processed as true. It's a %NULL-terminated string array.
+	 *     If the number of values is zero, this returns %NULL.
+	 *     It must be freed with g_strfreev() when no longer needed.
+	 *
+	 * Since: 0.14.0
+	 */
+	public string[] getTrueValues()
+	{
+		auto retStr = garrow_csv_read_options_get_true_values(gArrowCSVReadOptions);
+
+		scope(exit) Str.freeStringArray(retStr);
+		return Str.toStringArray(retStr);
+	}
+
+	/** */
+	public void setFalseValues(string[] falseValues)
+	{
+		garrow_csv_read_options_set_false_values(gArrowCSVReadOptions, Str.toStringzArray(falseValues), cast(size_t)falseValues.length);
+	}
+
+	/** */
+	public void setNullValues(string[] nullValues)
+	{
+		garrow_csv_read_options_set_null_values(gArrowCSVReadOptions, Str.toStringzArray(nullValues), cast(size_t)nullValues.length);
+	}
+
+	/** */
+	public void setTrueValues(string[] trueValues)
+	{
+		garrow_csv_read_options_set_true_values(gArrowCSVReadOptions, Str.toStringzArray(trueValues), cast(size_t)trueValues.length);
 	}
 }

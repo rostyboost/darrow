@@ -84,10 +84,19 @@ public class SeekableInputStream : InputStream
 	 *     It should be freed with g_bytes_unref() when no longer needed.
 	 *
 	 * Since: 0.12.0
+	 *
+	 * Throws: GException on failure.
 	 */
 	public Bytes peek(long nBytes)
 	{
-		auto p = garrow_seekable_input_stream_peek(gArrowSeekableInputStream, nBytes);
+		GError* err = null;
+
+		auto p = garrow_seekable_input_stream_peek(gArrowSeekableInputStream, nBytes, &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
 
 		if(p is null)
 		{

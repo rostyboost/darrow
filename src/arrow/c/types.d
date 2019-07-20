@@ -6,6 +6,38 @@ public import gobject.c.types;
 
 
 /**
+ * They are corresponding to `arrow::compute::CompareOperator` values.
+ */
+public enum GArrowCompareOperator
+{
+	/**
+	 * Equal operator.
+	 */
+	EQUAL = 0,
+	/**
+	 * Not equal operator.
+	 */
+	NOT_EQUAL = 1,
+	/**
+	 * Greater operator.
+	 */
+	GREATER = 2,
+	/**
+	 * Greater equal operator.
+	 */
+	GREATER_EQUAL = 3,
+	/**
+	 * Less operator.
+	 */
+	LESS = 4,
+	/**
+	 * Less equal operator.
+	 */
+	LESS_EQUAL = 5,
+}
+alias GArrowCompareOperator CompareOperator;
+
+/**
  * They are corresponding to `arrow::Compression::type` values.
  */
 public enum GArrowCompressionType
@@ -93,6 +125,10 @@ public enum GArrowError
 	 */
 	CAPACITY = 6,
 	/**
+	 * Index error.
+	 */
+	INDEX = 7,
+	/**
 	 * Unknown error.
 	 */
 	UNKNOWN = 9,
@@ -159,6 +195,26 @@ public enum GArrowFileMode
 	READWRITE = 2,
 }
 alias GArrowFileMode FileMode;
+
+/**
+ * They are corresponding to `arrow::json::UnexpectedFieldBehavior` values.
+ */
+public enum GArrowJSONReadUnexpectedFieldBehavior
+{
+	/**
+	 * Ignore other fields.
+	 */
+	IGNORE = 0,
+	/**
+	 * Return error.
+	 */
+	ERROR = 1,
+	/**
+	 * Infer a type.
+	 */
+	INFER_TYPE = 2,
+}
+alias GArrowJSONReadUnexpectedFieldBehavior JSONReadUnexpectedFieldBehavior;
 
 /**
  * They are corresponding to `arrow::ipc::MetadataVersion::type`
@@ -490,6 +546,16 @@ struct GArrowColumn
 }
 
 struct GArrowColumnClass
+{
+	GObjectClass parentClass;
+}
+
+struct GArrowCompareOptions
+{
+	GObject parentInstance;
+}
+
+struct GArrowCompareOptionsClass
 {
 	GObjectClass parentClass;
 }
@@ -998,6 +1064,26 @@ struct GArrowIntegerDataTypeClass
 	GArrowNumericDataTypeClass parentClass;
 }
 
+struct GArrowJSONReadOptions
+{
+	GObject parentInstance;
+}
+
+struct GArrowJSONReadOptionsClass
+{
+	GObjectClass parentClass;
+}
+
+struct GArrowJSONReader
+{
+	GObject parentInstance;
+}
+
+struct GArrowJSONReaderClass
+{
+	GObjectClass parentClass;
+}
+
 struct GArrowListArray
 {
 	GArrowArray parentInstance;
@@ -1342,6 +1428,16 @@ struct GArrowTableClass
 	GObjectClass parentClass;
 }
 
+struct GArrowTakeOptions
+{
+	GObject parentInstance;
+}
+
+struct GArrowTakeOptionsClass
+{
+	GObjectClass parentClass;
+}
+
 struct GArrowTensor
 {
 	GObject parentInstance;
@@ -1625,7 +1721,7 @@ alias GARROW_VERSION_MICRO = VERSION_MICRO;
 /**
  * The minor version.
  */
-enum VERSION_MINOR = 13;
+enum VERSION_MINOR = 14;
 alias GARROW_VERSION_MINOR = VERSION_MINOR;
 
 /**

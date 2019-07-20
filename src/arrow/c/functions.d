@@ -3,11 +3,11 @@ module arrow.c.functions;
 import std.stdio;
 import arrow.c.types;
 version (Windows)
-	static immutable LIBRARY_ARROW = ["glib-13.dll"];
+	static immutable LIBRARY_ARROW = ["glib-14.dll"];
 else version (OSX)
-	static immutable LIBRARY_ARROW = ["glib.13.dylib"];
+	static immutable LIBRARY_ARROW = ["glib.14.dylib"];
 else
-	static immutable LIBRARY_ARROW = ["libarrow-glib.so.13"];
+	static immutable LIBRARY_ARROW = ["libarrow-glib.so.14"];
 
 __gshared extern(C)
 {
@@ -31,6 +31,7 @@ __gshared extern(C)
 	int garrow_array_is_null(GArrowArray* array, long i);
 	int garrow_array_is_valid(GArrowArray* array, long i);
 	GArrowArray* garrow_array_slice(GArrowArray* array, long offset, long length);
+	GArrowArray* garrow_array_take(GArrowArray* array, GArrowArray* indices, GArrowTakeOptions* options, GError** err);
 	char* garrow_array_to_string(GArrowArray* array, GError** err);
 	GArrowArray* garrow_array_unique(GArrowArray* array, GError** err);
 
@@ -121,8 +122,17 @@ __gshared extern(C)
 	GType garrow_csv_read_options_get_type();
 	GArrowCSVReadOptions* garrow_csv_read_options_new();
 	void garrow_csv_read_options_add_column_type(GArrowCSVReadOptions* options, const(char)* name, GArrowDataType* dataType);
+	void garrow_csv_read_options_add_false_value(GArrowCSVReadOptions* options, const(char)* falseValue);
+	void garrow_csv_read_options_add_null_value(GArrowCSVReadOptions* options, const(char)* nullValue);
 	void garrow_csv_read_options_add_schema(GArrowCSVReadOptions* options, GArrowSchema* schema);
+	void garrow_csv_read_options_add_true_value(GArrowCSVReadOptions* options, const(char)* trueValue);
 	GHashTable* garrow_csv_read_options_get_column_types(GArrowCSVReadOptions* options);
+	char** garrow_csv_read_options_get_false_values(GArrowCSVReadOptions* options);
+	char** garrow_csv_read_options_get_null_values(GArrowCSVReadOptions* options);
+	char** garrow_csv_read_options_get_true_values(GArrowCSVReadOptions* options);
+	void garrow_csv_read_options_set_false_values(GArrowCSVReadOptions* options, char** falseValues, size_t nFalseValues);
+	void garrow_csv_read_options_set_null_values(GArrowCSVReadOptions* options, char** nullValues, size_t nNullValues);
+	void garrow_csv_read_options_set_true_values(GArrowCSVReadOptions* options, char** trueValues, size_t nTrueValues);
 
 	// arrow.CSVReader
 
@@ -170,6 +180,11 @@ __gshared extern(C)
 	const(char)* garrow_column_get_name(GArrowColumn* column);
 	GArrowColumn* garrow_column_slice(GArrowColumn* column, ulong offset, ulong length);
 	char* garrow_column_to_string(GArrowColumn* column, GError** err);
+
+	// arrow.CompareOptions
+
+	GType garrow_compare_options_get_type();
+	GArrowCompareOptions* garrow_compare_options_new();
 
 	// arrow.CompressedInputStream
 
@@ -288,6 +303,7 @@ __gshared extern(C)
 
 	GType garrow_dense_union_array_get_type();
 	GArrowDenseUnionArray* garrow_dense_union_array_new(GArrowInt8Array* typeIds, GArrowInt32Array* valueOffsets, GList* fields, GError** err);
+	GArrowDenseUnionArray* garrow_dense_union_array_new_data_type(GArrowDenseUnionDataType* dataType, GArrowInt8Array* typeIds, GArrowInt32Array* valueOffsets, GList* fields, GError** err);
 
 	// arrow.DenseUnionDataType
 
@@ -297,7 +313,7 @@ __gshared extern(C)
 	// arrow.DictionaryArray
 
 	GType garrow_dictionary_array_get_type();
-	GArrowDictionaryArray* garrow_dictionary_array_new(GArrowDataType* dataType, GArrowArray* indices);
+	GArrowDictionaryArray* garrow_dictionary_array_new(GArrowDataType* dataType, GArrowArray* indices, GArrowArray* dictionary, GError** err);
 	GArrowArray* garrow_dictionary_array_get_dictionary(GArrowDictionaryArray* array);
 	GArrowDictionaryDataType* garrow_dictionary_array_get_dictionary_data_type(GArrowDictionaryArray* array);
 	GArrowArray* garrow_dictionary_array_get_indices(GArrowDictionaryArray* array);
@@ -305,15 +321,16 @@ __gshared extern(C)
 	// arrow.DictionaryDataType
 
 	GType garrow_dictionary_data_type_get_type();
-	GArrowDictionaryDataType* garrow_dictionary_data_type_new(GArrowDataType* indexDataType, GArrowArray* dictionary, int ordered);
-	GArrowArray* garrow_dictionary_data_type_get_dictionary(GArrowDictionaryDataType* dictionaryDataType);
+	GArrowDictionaryDataType* garrow_dictionary_data_type_new(GArrowDataType* indexDataType, GArrowDataType* valueDataType, int ordered);
 	GArrowDataType* garrow_dictionary_data_type_get_index_data_type(GArrowDictionaryDataType* dictionaryDataType);
+	GArrowDataType* garrow_dictionary_data_type_get_value_data_type(GArrowDictionaryDataType* dictionaryDataType);
 	int garrow_dictionary_data_type_is_ordered(GArrowDictionaryDataType* dictionaryDataType);
 
 	// arrow.DoubleArray
 
 	GType garrow_double_array_get_type();
 	GArrowDoubleArray* garrow_double_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_double_array_compare(GArrowDoubleArray* array, double value, GArrowCompareOptions* options, GError** err);
 	double garrow_double_array_get_value(GArrowDoubleArray* array, long i);
 	double* garrow_double_array_get_values(GArrowDoubleArray* array, long* length);
 	double garrow_double_array_sum(GArrowDoubleArray* array, GError** err);
@@ -402,6 +419,7 @@ __gshared extern(C)
 
 	GType garrow_float_array_get_type();
 	GArrowFloatArray* garrow_float_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_float_array_compare(GArrowFloatArray* array, float value, GArrowCompareOptions* options, GError** err);
 	float garrow_float_array_get_value(GArrowFloatArray* array, long i);
 	float* garrow_float_array_get_values(GArrowFloatArray* array, long* length);
 	double garrow_float_array_sum(GArrowFloatArray* array, GError** err);
@@ -448,6 +466,7 @@ __gshared extern(C)
 
 	GType garrow_int16_array_get_type();
 	GArrowInt16Array* garrow_int16_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_int16_array_compare(GArrowInt16Array* array, short value, GArrowCompareOptions* options, GError** err);
 	short garrow_int16_array_get_value(GArrowInt16Array* array, long i);
 	short* garrow_int16_array_get_values(GArrowInt16Array* array, long* length);
 	long garrow_int16_array_sum(GArrowInt16Array* array, GError** err);
@@ -471,6 +490,7 @@ __gshared extern(C)
 
 	GType garrow_int32_array_get_type();
 	GArrowInt32Array* garrow_int32_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_int32_array_compare(GArrowInt32Array* array, int value, GArrowCompareOptions* options, GError** err);
 	int garrow_int32_array_get_value(GArrowInt32Array* array, long i);
 	int* garrow_int32_array_get_values(GArrowInt32Array* array, long* length);
 	long garrow_int32_array_sum(GArrowInt32Array* array, GError** err);
@@ -494,6 +514,7 @@ __gshared extern(C)
 
 	GType garrow_int64_array_get_type();
 	GArrowInt64Array* garrow_int64_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_int64_array_compare(GArrowInt64Array* array, long value, GArrowCompareOptions* options, GError** err);
 	long garrow_int64_array_get_value(GArrowInt64Array* array, long i);
 	long* garrow_int64_array_get_values(GArrowInt64Array* array, long* length);
 	long garrow_int64_array_sum(GArrowInt64Array* array, GError** err);
@@ -517,6 +538,7 @@ __gshared extern(C)
 
 	GType garrow_int8_array_get_type();
 	GArrowInt8Array* garrow_int8_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_int8_array_compare(GArrowInt8Array* array, byte value, GArrowCompareOptions* options, GError** err);
 	byte garrow_int8_array_get_value(GArrowInt8Array* array, long i);
 	byte* garrow_int8_array_get_values(GArrowInt8Array* array, long* length);
 	long garrow_int8_array_sum(GArrowInt8Array* array, GError** err);
@@ -549,6 +571,17 @@ __gshared extern(C)
 	// arrow.IntegerDataType
 
 	GType garrow_integer_data_type_get_type();
+
+	// arrow.JSONReadOptions
+
+	GType garrow_json_read_options_get_type();
+	GArrowJSONReadOptions* garrow_json_read_options_new();
+
+	// arrow.JSONReader
+
+	GType garrow_json_reader_get_type();
+	GArrowJSONReader* garrow_json_reader_new(GArrowInputStream* input, GArrowJSONReadOptions* options, GError** err);
+	GArrowTable* garrow_json_reader_read(GArrowJSONReader* reader, GError** err);
 
 	// arrow.ListArray
 
@@ -737,13 +770,14 @@ __gshared extern(C)
 	GType garrow_seekable_input_stream_get_type();
 	ulong garrow_seekable_input_stream_get_size(GArrowSeekableInputStream* inputStream, GError** err);
 	int garrow_seekable_input_stream_get_support_zero_copy(GArrowSeekableInputStream* inputStream);
-	GBytes* garrow_seekable_input_stream_peek(GArrowSeekableInputStream* inputStream, long nBytes);
+	GBytes* garrow_seekable_input_stream_peek(GArrowSeekableInputStream* inputStream, long nBytes, GError** err);
 	GArrowBuffer* garrow_seekable_input_stream_read_at(GArrowSeekableInputStream* inputStream, long position, long nBytes, GError** err);
 
 	// arrow.SparseUnionArray
 
 	GType garrow_sparse_union_array_get_type();
 	GArrowSparseUnionArray* garrow_sparse_union_array_new(GArrowInt8Array* typeIds, GList* fields, GError** err);
+	GArrowSparseUnionArray* garrow_sparse_union_array_new_data_type(GArrowSparseUnionDataType* dataType, GArrowInt8Array* typeIds, GList* fields, GError** err);
 
 	// arrow.SparseUnionDataType
 
@@ -806,6 +840,7 @@ __gshared extern(C)
 	GArrowTable* garrow_table_new_record_batches(GArrowSchema* schema, GArrowRecordBatch** recordBatches, size_t nRecordBatches, GError** err);
 	GArrowTable* garrow_table_new_values(GArrowSchema* schema, GList* values, GError** err);
 	GArrowTable* garrow_table_add_column(GArrowTable* table, uint i, GArrowColumn* column, GError** err);
+	GArrowTable* garrow_table_concatenate(GArrowTable* table, GList* otherTables, GError** err);
 	int garrow_table_equal(GArrowTable* table, GArrowTable* otherTable);
 	GArrowColumn* garrow_table_get_column(GArrowTable* table, uint i);
 	uint garrow_table_get_n_columns(GArrowTable* table);
@@ -813,12 +848,18 @@ __gshared extern(C)
 	GArrowSchema* garrow_table_get_schema(GArrowTable* table);
 	GArrowTable* garrow_table_remove_column(GArrowTable* table, uint i, GError** err);
 	GArrowTable* garrow_table_replace_column(GArrowTable* table, uint i, GArrowColumn* column, GError** err);
+	GArrowTable* garrow_table_slice(GArrowTable* table, long offset, long length);
 	char* garrow_table_to_string(GArrowTable* table, GError** err);
 
 	// arrow.TableBatchReader
 
 	GType garrow_table_batch_reader_get_type();
 	GArrowTableBatchReader* garrow_table_batch_reader_new(GArrowTable* table);
+
+	// arrow.TakeOptions
+
+	GType garrow_take_options_get_type();
+	GArrowTakeOptions* garrow_take_options_new();
 
 	// arrow.Tensor
 
@@ -914,6 +955,7 @@ __gshared extern(C)
 
 	GType garrow_uint16_array_get_type();
 	GArrowUInt16Array* garrow_uint16_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_uint16_array_compare(GArrowUInt16Array* array, ushort value, GArrowCompareOptions* options, GError** err);
 	ushort garrow_uint16_array_get_value(GArrowUInt16Array* array, long i);
 	ushort* garrow_uint16_array_get_values(GArrowUInt16Array* array, long* length);
 	ulong garrow_uint16_array_sum(GArrowUInt16Array* array, GError** err);
@@ -937,6 +979,7 @@ __gshared extern(C)
 
 	GType garrow_uint32_array_get_type();
 	GArrowUInt32Array* garrow_uint32_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_uint32_array_compare(GArrowUInt32Array* array, uint value, GArrowCompareOptions* options, GError** err);
 	uint garrow_uint32_array_get_value(GArrowUInt32Array* array, long i);
 	uint* garrow_uint32_array_get_values(GArrowUInt32Array* array, long* length);
 	ulong garrow_uint32_array_sum(GArrowUInt32Array* array, GError** err);
@@ -960,6 +1003,7 @@ __gshared extern(C)
 
 	GType garrow_uint64_array_get_type();
 	GArrowUInt64Array* garrow_uint64_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_uint64_array_compare(GArrowUInt64Array* array, ulong value, GArrowCompareOptions* options, GError** err);
 	ulong garrow_uint64_array_get_value(GArrowUInt64Array* array, long i);
 	ulong* garrow_uint64_array_get_values(GArrowUInt64Array* array, long* length);
 	ulong garrow_uint64_array_sum(GArrowUInt64Array* array, GError** err);
@@ -983,6 +1027,7 @@ __gshared extern(C)
 
 	GType garrow_uint8_array_get_type();
 	GArrowUInt8Array* garrow_uint8_array_new(long length, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBooleanArray* garrow_uint8_array_compare(GArrowUInt8Array* array, ubyte value, GArrowCompareOptions* options, GError** err);
 	ubyte garrow_uint8_array_get_value(GArrowUInt8Array* array, long i);
 	ubyte* garrow_uint8_array_get_values(GArrowUInt8Array* array, long* length);
 	ulong garrow_uint8_array_sum(GArrowUInt8Array* array, GError** err);

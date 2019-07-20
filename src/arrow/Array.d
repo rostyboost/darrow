@@ -6,6 +6,7 @@ private import arrow.CountOptions;
 private import arrow.DataType;
 private import arrow.DictionaryArray;
 private import arrow.StructArray;
+private import arrow.TakeOptions;
 private import arrow.c.functions;
 public  import arrow.c.types;
 private import glib.ErrorG;
@@ -315,6 +316,37 @@ public class Array : ObjectG
 	public Array slice(long offset, long length)
 	{
 		auto p = garrow_array_slice(gArrowArray, offset, length);
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(Array)(cast(GArrowArray*) p, true);
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     indices = The indices of values to take.
+	 *     options = A #GArrowTakeOptions.
+	 * Returns: The #GArrowArray taken from
+	 *     an array of values at indices in input array or %NULL on error.
+	 *
+	 * Since: 0.14.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public Array take(Array indices, TakeOptions options)
+	{
+		GError* err = null;
+
+		auto p = garrow_array_take(gArrowArray, (indices is null) ? null : indices.getArrayStruct(), (options is null) ? null : options.getTakeOptionsStruct(), &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
 
 		if(p is null)
 		{
