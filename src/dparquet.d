@@ -35,6 +35,7 @@ import std.bitmanip;
 import std.traits : isArray, isScalarType, isSomeString, fullyQualifiedName;
 import std.range.primitives : ElementType;
 import std.system;
+import std.typecons : Nullable;
 
 }
 
@@ -119,23 +120,27 @@ public class ParquetFile {
         }
     }
 
-    T[] col_values(T)(string name)
+    auto col_values(T, bool nullable = false)(string name)
     {
         if(!col_names.canFind(name))
             throw new Exception("Unknown column name:" ~ name);
         auto col = _fr.readColumn(_name2index[name]);
-        return ColumnValues.get_values!T(col);
+        return ColumnValues.get_values!(T, nullable)(col);
     }
 }
 
 
 private struct ColumnValues {
-    static T[] get_values(T)(Column col)
+    static auto get_values(T, bool nullable)(Column col)
     {
         auto ca = garrow_column_get_data(col.getColumnStruct);
         auto n_chunks = garrow_chunked_array_get_n_chunks(ca);
 
-        T[] res;
+        static if(nullable)
+            alias RT = Nullable!T;
+        else
+            alias RT = T;
+        RT[] res;
         
         static if (isScalarType!T || isSomeString!T)
         {
@@ -146,7 +151,7 @@ private struct ColumnValues {
                 auto chunk_len = garrow_array_get_length(chunk);
                 auto offset = res.length;
                 res.length += chunk_len;
-                res[offset..offset+chunk_len] = getArrayBasicValues!(T, CT)(cast(CT*)chunk); // double copy?	
+                res[offset..offset+chunk_len] = getArrayBasicValues!(T, CT, nullable)(cast(CT*)chunk); // double copy?	
                 g_object_unref(chunk);
             }
         }
@@ -202,35 +207,87 @@ private T[] getArrayValue(T)(GArrowListArray* arr, long i)
     }
 }
 
-private T[] getArrayBasicValues(T, U)(U* arr)
+private auto getArrayBasicValues(T, U, bool nullable)(U* arr)
 {
-    static if(isSomeString!T)
+    static if(nullable)
+        alias RT = Nullable!T;
+    else
+        alias RT = T;
+
+    static if(!nullable)
     {
-        auto len = garrow_array_get_length(cast(GArrowArray*)arr);
-        auto res = new T[len];
-        foreach(k; 0..len)
+        static if(isSomeString!T)
         {
-            auto gBytes = cast(GBytes*)garrow_binary_array_get_value(arr, k);
-            size_t str_len;
-            auto p = g_bytes_get_data(gBytes, &str_len);
-            res[k] = cast(T)p[0 .. str_len].dup; //copy
-            g_bytes_unref(gBytes);
+            auto len = garrow_array_get_length(cast(GArrowArray*)arr);
+            auto res = new T[len];
+            foreach(k; 0..len)
+            {
+                auto gBytes = cast(GBytes*)garrow_binary_array_get_value(arr, k);
+                size_t str_len;
+                auto p = g_bytes_get_data(gBytes, &str_len);
+                res[k] = cast(T)p[0 .. str_len].dup; //copy
+                g_bytes_unref(gBytes);
+            }
+            return res;
+            //return getArrayBasicStringValuesFast!(T, U)(arr);
         }
-        return res;
-        //return getArrayBasicStringValuesFast!(T, U)(arr);
+        else
+        {
+            long length;
+            static if(is(T == long))
+                auto p = garrow_int64_array_get_values(arr, &length);
+            static if(is(T == int))
+                auto p = garrow_int32_array_get_values(arr, &length);
+            static if(is(T == float))
+                auto p = garrow_float_array_get_values(arr, &length);
+            static if(is(T == double))
+                auto p = garrow_double_array_get_values(arr, &length);
+            return p[0..length].dup; // copy
+        }
     }
     else
     {
-        long length;
-        static if(is(T == long))
-            auto p = garrow_int64_array_get_values(arr, &length);
-        static if(is(T == int))
-            auto p = garrow_int32_array_get_values(arr, &length);
-        static if(is(T == float))
-            auto p = garrow_float_array_get_values(arr, &length);
-        static if(is(T == double))
-            auto p = garrow_double_array_get_values(arr, &length);
-        return p[0..length].dup; // copy
+        import std.stdio; import std.conv: to;
+        auto len = garrow_array_get_length(cast(GArrowArray*)arr);
+        auto res = new RT[len];
+
+        long offset = garrow_array_get_offset(cast(GArrowArray*)arr);
+        auto null_buff = garrow_array_get_null_bitmap(cast(GArrowArray*)arr);
+        auto bytes_null_buff = garrow_buffer_get_data(null_buff);
+        size_t size_null_b;
+        auto p_null = g_bytes_get_data(bytes_null_buff, &size_null_b);
+        auto bytes_null_data = cast(byte[])p_null[offset .. offset + size_null_b];
+
+        foreach(k; 0..len)
+        {
+            RT v;
+            auto not_null = ((bytes_null_data[k >> 3] >> (k & 0x07)) & 1).to!bool;
+            if(not_null)
+            {
+                static if(is(T == long))
+                    v = garrow_int64_array_get_value(arr, k);
+                static if(is(T == int))
+                    v = garrow_int32_array_get_value(arr, k);
+                static if(is(T == float))
+                    v = garrow_float_array_get_value(arr, k);
+                static if(is(T == double))
+                    v = garrow_double_array_get_value(arr, k);
+                static if(isSomeString!T)
+                {
+                    auto gBytes = cast(GBytes*)garrow_binary_array_get_value(arr, k);
+                    size_t str_len;
+                    auto p = g_bytes_get_data(gBytes, &str_len);
+                    v = cast(T)p[0 .. str_len].dup; //copy
+                    g_bytes_unref(gBytes);
+                }
+            }
+            res[k] = v;
+        }
+        g_bytes_unref(cast(GBytes*)p_null);
+        g_bytes_unref(bytes_null_buff);
+        g_object_unref(null_buff);
+
+        return res;
     }
 }
 
