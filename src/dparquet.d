@@ -201,7 +201,7 @@ private T[] getArrayValue(T)(GArrowListArray* arr, long i)
     {
         alias CT = CastTypeGArray!T;
 	    auto g_arr = cast(CT*)garrow_list_array_get_value(arr, i);
-        auto res = getArrayBasicValues!(T, CT)(g_arr);
+        auto res = getArrayBasicValues!(T, CT, false)(g_arr);
         g_object_unref(g_arr);
         return res;
     }
