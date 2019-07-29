@@ -32,7 +32,7 @@ import parquet.ArrowFileReader : ArrowFileReader;
 
 import std.algorithm : canFind;
 import std.bitmanip;
-import std.traits : isArray, isSomeString, fullyQualifiedName;
+import std.traits : isArray, isScalarType, isSomeString, fullyQualifiedName;
 import std.range.primitives : ElementType;
 import std.system;
 
@@ -137,7 +137,7 @@ private struct ColumnValues {
 
         T[] res;
         
-        static if (!isArray!T && !isSomeString!T)
+        static if (isScalarType!T || isSomeString!T)
         {
             alias CT = CastTypeGArray!T;
             foreach(ci; 0..n_chunks)
@@ -150,20 +150,7 @@ private struct ColumnValues {
                 g_object_unref(chunk);
             }
         }
-        static if(isSomeString!T)
-        {
-            alias CT = CastTypeGArray!T;
-            foreach(ci; 0..n_chunks)
-            {
-                auto chunk = garrow_chunked_array_get_chunk(ca, ci);
-                auto chunk_len = garrow_array_get_length(chunk);
-                auto offset = res.length;
-                res.length += chunk_len;
-                res[offset..offset+chunk_len] = getArrayBasicValues!(T, CT)(cast(CT*)chunk); // double copy?	
-                g_object_unref(chunk);
-            }
-        }
-        static if(isArray!T && !isSomeString!T)
+        else static if(isArray!T)
         {
             foreach(ci; 0..n_chunks)
             {
@@ -175,6 +162,10 @@ private struct ColumnValues {
                     res[offset + j] = getArrayValue!(ElementType!T)(cast(GArrowListArray*)chunk, j);
                 g_object_unref(chunk);
             }
+        }
+        else
+        {
+            static assert(0, "Unsupported column type.");
         }
         g_object_unref(ca);
         return res;
