@@ -113,7 +113,7 @@ public class UInt32Array : NumericArray
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The i-th value.
+	 * Returns: The @i-th value.
 	 */
 	public uint getValue(long i)
 	{

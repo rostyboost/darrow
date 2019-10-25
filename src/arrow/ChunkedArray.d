@@ -116,6 +116,10 @@ public class ChunkedArray : ObjectG
 	}
 
 	/**
+	 *
+	 *
+	 * Deprecated: Use garrow_chunked_array_get_n_rows() instead.
+	 *
 	 * Returns: The total number of rows in the chunked array.
 	 */
 	public ulong getLength()
@@ -137,6 +141,16 @@ public class ChunkedArray : ObjectG
 	public ulong getNNulls()
 	{
 		return garrow_chunked_array_get_n_nulls(gArrowChunkedArray);
+	}
+
+	/**
+	 * Returns: The total number of rows in the chunked array.
+	 *
+	 * Since: 1.0.0
+	 */
+	public ulong getNRows()
+	{
+		return garrow_chunked_array_get_n_rows(gArrowChunkedArray);
 	}
 
 	/**

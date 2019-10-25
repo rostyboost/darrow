@@ -1,7 +1,8 @@
 module arrow.Table;
 
 private import arrow.Array;
-private import arrow.Column;
+private import arrow.ChunkedArray;
+private import arrow.Field;
 private import arrow.RecordBatch;
 private import arrow.Schema;
 private import arrow.c.functions;
@@ -52,31 +53,6 @@ public class Table : ObjectG
 
 	/**
 	 *
-	 *
-	 * Deprecated: Use garrow_table_new_values() instead.
-	 *
-	 * Params:
-	 *     schema = The schema of the table.
-	 *     columns = The columns of the table.
-	 *
-	 * Returns: A newly created #GArrowTable.
-	 *
-	 * Throws: ConstructionException GTK+ fails to create the object.
-	 */
-	/*public this(Schema schema, ListG columns)
-	{
-		auto p = garrow_table_new((schema is null) ? null : schema.getSchemaStruct(), (columns is null) ? null : columns.getListGStruct());
-
-		if(p is null)
-		{
-			throw new ConstructionException("null returned by new");
-		}
-
-		this(cast(GArrowTable*) p, true);
-	}*/
-
-	/**
-	 *
 	 * Params:
 	 *     schema = The schema of the table.
 	 *     arrays = The arrays of the table.
@@ -116,25 +92,26 @@ public class Table : ObjectG
 	 *
 	 * Params:
 	 *     schema = The schema of the table.
-	 *     columns = The columns of the table.
+	 *     chunkedArrays = The chunked arrays of
+	 *         the table.
 	 * Returns: A newly created #GArrowTable or %NULL on error.
 	 *
-	 * Since: 0.12.0
+	 * Since: 1.0.0
 	 *
 	 * Throws: GException on failure.
 	 * Throws: ConstructionException GTK+ fails to create the object.
 	 */
-	public this(Schema schema, Column[] columns)
+	public this(Schema schema, ChunkedArray[] chunkedArrays)
 	{
-		GArrowColumn*[] columnsArray = new GArrowColumn*[columns.length];
-		for ( int i = 0; i < columns.length; i++ )
+		GArrowChunkedArray*[] chunkedArraysArray = new GArrowChunkedArray*[chunkedArrays.length];
+		for ( int i = 0; i < chunkedArrays.length; i++ )
 		{
-			columnsArray[i] = columns[i].getColumnStruct();
+			chunkedArraysArray[i] = chunkedArrays[i].getChunkedArrayStruct();
 		}
 
 		GError* err = null;
 
-		auto p = garrow_table_new_columns((schema is null) ? null : schema.getSchemaStruct(), columnsArray.ptr, cast(size_t)columns.length, &err);
+		auto p = garrow_table_new_chunked_arrays((schema is null) ? null : schema.getSchemaStruct(), chunkedArraysArray.ptr, cast(size_t)chunkedArrays.length, &err);
 
 		if (err !is null)
 		{
@@ -143,7 +120,7 @@ public class Table : ObjectG
 
 		if(p is null)
 		{
-			throw new ConstructionException("null returned by new_columns");
+			throw new ConstructionException("null returned by new_chunked_arrays");
 		}
 
 		this(cast(GArrowTable*) p, true);
@@ -191,9 +168,9 @@ public class Table : ObjectG
 	 *
 	 * Params:
 	 *     schema = The schema of the table.
-	 *     values = The values of the table. All values must be instance of the
-	 *         same class. Available classes are #GArrowColumn, #GArrowArray and
-	 *         #GArrowRecordBatch.
+	 *     values = The values of the table. All values must be instance of
+	 *         the same class. Available classes are #GArrowChunkedArray,
+	 *         #GArrowArray and #GArrowRecordBatch.
 	 * Returns: A newly created #GArrowTable or %NULL on error.
 	 *
 	 * Since: 0.12.0
@@ -224,19 +201,20 @@ public class Table : ObjectG
 	 *
 	 * Params:
 	 *     i = The index of the new column.
-	 *     column = The column to be added.
+	 *     field = The field for the column to be added.
+	 *     chunkedArray = The column data to be added.
 	 * Returns: The newly allocated
 	 *     #GArrowTable that has a new column or %NULL on error.
 	 *
-	 * Since: 0.3.0
+	 * Since: 1.0.0
 	 *
 	 * Throws: GException on failure.
 	 */
-	public Table addColumn(uint i, Column column)
+	public Table addColumn(uint i, Field field, ChunkedArray chunkedArray)
 	{
 		GError* err = null;
 
-		auto p = garrow_table_add_column(gArrowTable, i, (column is null) ? null : column.getColumnStruct(), &err);
+		auto p = garrow_table_add_column(gArrowTable, i, (field is null) ? null : field.getFieldStruct(), (chunkedArray is null) ? null : chunkedArray.getChunkedArrayStruct(), &err);
 
 		if (err !is null)
 		{
@@ -297,19 +275,23 @@ public class Table : ObjectG
 	/**
 	 *
 	 * Params:
-	 *     i = The index of the target column.
-	 * Returns: The i-th column in the table.
+	 *     i = The index of the target column. If it's negative, index is
+	 *         counted backward from the end of the columns. `-1` means the last
+	 *         column.
+	 * Returns: The i-th column's data in the table.
+	 *
+	 * Since: 1.0.0
 	 */
-	public Column getColumn(uint i)
+	public ChunkedArray getColumnData(int i)
 	{
-		auto p = garrow_table_get_column(gArrowTable, i);
+		auto p = garrow_table_get_column_data(gArrowTable, i);
 
 		if(p is null)
 		{
 			return null;
 		}
 
-		return ObjectG.getDObject!(Column)(cast(GArrowColumn*) p, true);
+		return ObjectG.getDObject!(ChunkedArray)(cast(GArrowChunkedArray*) p, true);
 	}
 
 	/**
@@ -377,20 +359,21 @@ public class Table : ObjectG
 	 *
 	 * Params:
 	 *     i = The index of the column to be replaced.
-	 *     column = The newly added #GArrowColumn.
+	 *     field = The field for the new column.
+	 *     chunkedArray = The newly added column data.
 	 * Returns: The newly allocated
 	 *     #GArrowTable that has @column as the @i-th column or %NULL on
 	 *     error.
 	 *
-	 * Since: 0.10.0
+	 * Since: 1.0.0
 	 *
 	 * Throws: GException on failure.
 	 */
-	public Table replaceColumn(uint i, Column column)
+	public Table replaceColumn(uint i, Field field, ChunkedArray chunkedArray)
 	{
 		GError* err = null;
 
-		auto p = garrow_table_replace_column(gArrowTable, i, (column is null) ? null : column.getColumnStruct(), &err);
+		auto p = garrow_table_replace_column(gArrowTable, i, (field is null) ? null : field.getFieldStruct(), (chunkedArray is null) ? null : chunkedArray.getChunkedArrayStruct(), &err);
 
 		if (err !is null)
 		{

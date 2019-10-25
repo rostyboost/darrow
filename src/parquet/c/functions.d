@@ -3,11 +3,11 @@ module parquet.c.functions;
 import std.stdio;
 import parquet.c.types;
 version (Windows)
-	static immutable LIBRARY_PARQUET = ["glib-14.dll"];
+	static immutable LIBRARY_PARQUET = ["glib-100.dll;g.dll;g.dll"];
 else version (OSX)
-	static immutable LIBRARY_PARQUET = ["glib.14.dylib"];
+	static immutable LIBRARY_PARQUET = ["glib.100.dylib"];
 else
-	static immutable LIBRARY_PARQUET = ["libparquet-glib.so.14"];
+	static immutable LIBRARY_PARQUET = ["libparquet-glib.so.100"];
 
 __gshared extern(C)
 {
@@ -19,9 +19,8 @@ __gshared extern(C)
 	GParquetArrowFileReader* gparquet_arrow_file_reader_new_path(const(char)* path, GError** err);
 	int gparquet_arrow_file_reader_get_n_row_groups(GParquetArrowFileReader* reader);
 	GArrowSchema* gparquet_arrow_file_reader_get_schema(GParquetArrowFileReader* reader, GError** err);
-	GArrowColumn* gparquet_arrow_file_reader_read_column(GParquetArrowFileReader* reader, int columnIndex, GError** err);
+	GArrowChunkedArray* gparquet_arrow_file_reader_read_column_data(GParquetArrowFileReader* reader, int i, GError** err);
 	GArrowTable* gparquet_arrow_file_reader_read_table(GParquetArrowFileReader* reader, GError** err);
-	GArrowSchema* gparquet_arrow_file_reader_select_schema(GParquetArrowFileReader* reader, int* columnIndexes, size_t nColumnIndexes, GError** err);
 	void gparquet_arrow_file_reader_set_use_threads(GParquetArrowFileReader* reader, int useThreads);
 
 	// parquet.ArrowFileWriter

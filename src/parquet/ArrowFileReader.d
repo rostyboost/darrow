@@ -1,6 +1,6 @@
 module parquet.ArrowFileReader;
 
-private import arrow.Column;
+private import arrow.ChunkedArray;
 private import arrow.Schema;
 private import arrow.SeekableInputStream;
 private import arrow.Table;
@@ -148,18 +148,20 @@ public class ArrowFileReader : ObjectG
 	/**
 	 *
 	 * Params:
-	 *     columnIndex = Index integer of the column to be read.
-	 * Returns: A read #GArrowColumn.
+	 *     i = The index of the column to be read. If it's negative, index is
+	 *         counted backward from the end of the columns. `-1` means the last
+	 *         column.
+	 * Returns: A read #GArrowChunkedArray.
 	 *
-	 * Since: 0.12.0
+	 * Since: 1.0.0
 	 *
 	 * Throws: GException on failure.
 	 */
-	public Column readColumn(int columnIndex)
+	public ChunkedArray readColumnData(int i)
 	{
 		GError* err = null;
 
-		auto p = gparquet_arrow_file_reader_read_column(gParquetArrowFileReader, columnIndex, &err);
+		auto p = gparquet_arrow_file_reader_read_column_data(gParquetArrowFileReader, i, &err);
 
 		if (err !is null)
 		{
@@ -171,7 +173,7 @@ public class ArrowFileReader : ObjectG
 			return null;
 		}
 
-		return ObjectG.getDObject!(Column)(cast(GArrowColumn*) p, true);
+		return ObjectG.getDObject!(ChunkedArray)(cast(GArrowChunkedArray*) p, true);
 	}
 
 	/**
@@ -198,35 +200,6 @@ public class ArrowFileReader : ObjectG
 		}
 
 		return ObjectG.getDObject!(Table)(cast(GArrowTable*) p, true);
-	}
-
-	/**
-	 *
-	 * Params:
-	 *     columnIndexes = The array of column indexes to be selected
-	 * Returns: A selected #GArrowSchema.
-	 *
-	 * Since: 0.12.0
-	 *
-	 * Throws: GException on failure.
-	 */
-	public Schema selectSchema(int[] columnIndexes)
-	{
-		GError* err = null;
-
-		auto p = gparquet_arrow_file_reader_select_schema(gParquetArrowFileReader, columnIndexes.ptr, cast(size_t)columnIndexes.length, &err);
-
-		if (err !is null)
-		{
-			throw new GException( new ErrorG(err) );
-		}
-
-		if(p is null)
-		{
-			return null;
-		}
-
-		return ObjectG.getDObject!(Schema)(cast(GArrowSchema*) p, true);
 	}
 
 	/** */

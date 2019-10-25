@@ -110,7 +110,7 @@ public class BooleanArray : PrimitiveArray
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The i-th value.
+	 * Returns: The @i-th value.
 	 */
 	public bool getValue(long i)
 	{

@@ -3,6 +3,7 @@ module arrow.BinaryArrayBuilder;
 private import arrow.ArrayBuilder;
 private import arrow.c.functions;
 public  import arrow.c.types;
+private import glib.Bytes;
 private import glib.ConstructionException;
 private import glib.ErrorG;
 private import glib.GException;
@@ -110,6 +111,30 @@ public class BinaryArrayBuilder : ArrayBuilder
 	/**
 	 *
 	 * Params:
+	 *     n = The number of null values to be appended.
+	 * Returns: %TRUE on success, %FALSE if there was an error.
+	 *
+	 * Since: 1.0.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public bool appendNulls(long n)
+	{
+		GError* err = null;
+
+		auto p = garrow_binary_array_builder_append_nulls(gArrowBinaryArrayBuilder, n, &err) != 0;
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		return p;
+	}
+
+	/**
+	 *
+	 * Params:
 	 *     value = A binary value.
 	 * Returns: %TRUE on success, %FALSE if there was an error.
 	 *
@@ -122,6 +147,74 @@ public class BinaryArrayBuilder : ArrayBuilder
 		GError* err = null;
 
 		auto p = garrow_binary_array_builder_append_value(gArrowBinaryArrayBuilder, value.ptr, cast(int)value.length, &err) != 0;
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		return p;
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     value = A binary value.
+	 * Returns: %TRUE on success, %FALSE if there was an error.
+	 *
+	 * Since: 1.0.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public bool appendValueBytes(Bytes value)
+	{
+		GError* err = null;
+
+		auto p = garrow_binary_array_builder_append_value_bytes(gArrowBinaryArrayBuilder, (value is null) ? null : value.getBytesStruct(), &err) != 0;
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		return p;
+	}
+
+	/**
+	 * Append multiple values at once. It's more efficient than multiple
+	 * `append()` and `append_null()` calls.
+	 *
+	 * Params:
+	 *     values = The array of #GBytes.
+	 *     isValids = The array of
+	 *         boolean that shows whether the Nth value is valid or not. If the
+	 *         Nth @is_valids is %TRUE, the Nth @values is valid value. Otherwise
+	 *         the Nth value is null value.
+	 *
+	 * Returns: %TRUE on success, %FALSE if there was an error.
+	 *
+	 * Since: 1.0.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public bool appendValues(Bytes[] values, bool[] isValids)
+	{
+		GBytes*[] valuesArray = new GBytes*[values.length];
+		for ( int i = 0; i < values.length; i++ )
+		{
+			valuesArray[i] = values[i].getBytesStruct();
+		}
+
+
+		int[] isValidsArray = new int[isValids.length];
+		for ( int i = 0; i < isValids.length; i++ )
+		{
+			isValidsArray[i] = isValids[i] ? 1 : 0;
+		}
+
+		GError* err = null;
+
+		auto p = garrow_binary_array_builder_append_values(gArrowBinaryArrayBuilder, valuesArray.ptr, cast(long)values.length, isValidsArray.ptr, cast(long)isValids.length, &err) != 0;
 
 		if (err !is null)
 		{

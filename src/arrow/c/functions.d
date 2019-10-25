@@ -3,11 +3,11 @@ module arrow.c.functions;
 import std.stdio;
 import arrow.c.types;
 version (Windows)
-	static immutable LIBRARY_ARROW = ["glib-14.dll"];
+	static immutable LIBRARY_ARROW = ["glib-100.dll;g.dll;g.dll"];
 else version (OSX)
-	static immutable LIBRARY_ARROW = ["glib.14.dylib"];
+	static immutable LIBRARY_ARROW = ["glib.100.dylib"];
 else
-	static immutable LIBRARY_ARROW = ["libarrow-glib.so.14"];
+	static immutable LIBRARY_ARROW = ["libarrow-glib.so.100"];
 
 __gshared extern(C)
 {
@@ -19,21 +19,27 @@ __gshared extern(C)
 	long garrow_array_count(GArrowArray* array, GArrowCountOptions* options, GError** err);
 	GArrowStructArray* garrow_array_count_values(GArrowArray* array, GError** err);
 	GArrowDictionaryArray* garrow_array_dictionary_encode(GArrowArray* array, GError** err);
+	char* garrow_array_diff_unified(GArrowArray* array, GArrowArray* otherArray);
 	int garrow_array_equal(GArrowArray* array, GArrowArray* otherArray);
 	int garrow_array_equal_approx(GArrowArray* array, GArrowArray* otherArray);
 	int garrow_array_equal_range(GArrowArray* array, long startIndex, GArrowArray* otherArray, long otherStartIndex, long endIndex);
+	GArrowArray* garrow_array_filter(GArrowArray* array, GArrowBooleanArray* filter, GError** err);
 	long garrow_array_get_length(GArrowArray* array);
 	long garrow_array_get_n_nulls(GArrowArray* array);
 	GArrowBuffer* garrow_array_get_null_bitmap(GArrowArray* array);
 	long garrow_array_get_offset(GArrowArray* array);
 	GArrowDataType* garrow_array_get_value_data_type(GArrowArray* array);
 	GArrowType garrow_array_get_value_type(GArrowArray* array);
+	GArrowBooleanArray* garrow_array_is_in(GArrowArray* left, GArrowArray* right, GError** err);
+	GArrowBooleanArray* garrow_array_is_in_chunked_array(GArrowArray* left, GArrowChunkedArray* right, GError** err);
 	int garrow_array_is_null(GArrowArray* array, long i);
 	int garrow_array_is_valid(GArrowArray* array, long i);
 	GArrowArray* garrow_array_slice(GArrowArray* array, long offset, long length);
+	GArrowUInt64Array* garrow_array_sort_to_indices(GArrowArray* array, GError** err);
 	GArrowArray* garrow_array_take(GArrowArray* array, GArrowArray* indices, GArrowTakeOptions* options, GError** err);
 	char* garrow_array_to_string(GArrowArray* array, GError** err);
 	GArrowArray* garrow_array_unique(GArrowArray* array, GError** err);
+	GArrowArray* garrow_array_view(GArrowArray* array, GArrowDataType* returnType, GError** err);
 
 	// arrow.ArrayBuilder
 
@@ -57,7 +63,10 @@ __gshared extern(C)
 	GArrowBinaryArrayBuilder* garrow_binary_array_builder_new();
 	int garrow_binary_array_builder_append(GArrowBinaryArrayBuilder* builder, ubyte* value, int length, GError** err);
 	int garrow_binary_array_builder_append_null(GArrowBinaryArrayBuilder* builder, GError** err);
+	int garrow_binary_array_builder_append_nulls(GArrowBinaryArrayBuilder* builder, long n, GError** err);
 	int garrow_binary_array_builder_append_value(GArrowBinaryArrayBuilder* builder, ubyte* value, int length, GError** err);
+	int garrow_binary_array_builder_append_value_bytes(GArrowBinaryArrayBuilder* builder, GBytes* value, GError** err);
+	int garrow_binary_array_builder_append_values(GArrowBinaryArrayBuilder* builder, GBytes** values, long valuesLength, int* isValids, long isValidsLength, GError** err);
 
 	// arrow.BinaryDataType
 
@@ -121,15 +130,18 @@ __gshared extern(C)
 
 	GType garrow_csv_read_options_get_type();
 	GArrowCSVReadOptions* garrow_csv_read_options_new();
+	void garrow_csv_read_options_add_column_name(GArrowCSVReadOptions* options, const(char)* columnName);
 	void garrow_csv_read_options_add_column_type(GArrowCSVReadOptions* options, const(char)* name, GArrowDataType* dataType);
 	void garrow_csv_read_options_add_false_value(GArrowCSVReadOptions* options, const(char)* falseValue);
 	void garrow_csv_read_options_add_null_value(GArrowCSVReadOptions* options, const(char)* nullValue);
 	void garrow_csv_read_options_add_schema(GArrowCSVReadOptions* options, GArrowSchema* schema);
 	void garrow_csv_read_options_add_true_value(GArrowCSVReadOptions* options, const(char)* trueValue);
+	char** garrow_csv_read_options_get_column_names(GArrowCSVReadOptions* options);
 	GHashTable* garrow_csv_read_options_get_column_types(GArrowCSVReadOptions* options);
 	char** garrow_csv_read_options_get_false_values(GArrowCSVReadOptions* options);
 	char** garrow_csv_read_options_get_null_values(GArrowCSVReadOptions* options);
 	char** garrow_csv_read_options_get_true_values(GArrowCSVReadOptions* options);
+	void garrow_csv_read_options_set_column_names(GArrowCSVReadOptions* options, char** columnNames, size_t nColumnNames);
 	void garrow_csv_read_options_set_false_values(GArrowCSVReadOptions* options, char** falseValues, size_t nFalseValues);
 	void garrow_csv_read_options_set_null_values(GArrowCSVReadOptions* options, char** nullValues, size_t nNullValues);
 	void garrow_csv_read_options_set_true_values(GArrowCSVReadOptions* options, char** trueValues, size_t nTrueValues);
@@ -155,6 +167,7 @@ __gshared extern(C)
 	ulong garrow_chunked_array_get_length(GArrowChunkedArray* chunkedArray);
 	uint garrow_chunked_array_get_n_chunks(GArrowChunkedArray* chunkedArray);
 	ulong garrow_chunked_array_get_n_nulls(GArrowChunkedArray* chunkedArray);
+	ulong garrow_chunked_array_get_n_rows(GArrowChunkedArray* chunkedArray);
 	GArrowDataType* garrow_chunked_array_get_value_data_type(GArrowChunkedArray* chunkedArray);
 	GArrowType garrow_chunked_array_get_value_type(GArrowChunkedArray* chunkedArray);
 	GArrowChunkedArray* garrow_chunked_array_slice(GArrowChunkedArray* chunkedArray, ulong offset, ulong length);
@@ -165,21 +178,6 @@ __gshared extern(C)
 	GType garrow_codec_get_type();
 	GArrowCodec* garrow_codec_new(GArrowCompressionType type, GError** err);
 	const(char)* garrow_codec_get_name(GArrowCodec* codec);
-
-	// arrow.Column
-
-	GType garrow_column_get_type();
-	GArrowColumn* garrow_column_new_array(GArrowField* field, GArrowArray* array);
-	GArrowColumn* garrow_column_new_chunked_array(GArrowField* field, GArrowChunkedArray* chunkedArray);
-	int garrow_column_equal(GArrowColumn* column, GArrowColumn* otherColumn);
-	GArrowChunkedArray* garrow_column_get_data(GArrowColumn* column);
-	GArrowDataType* garrow_column_get_data_type(GArrowColumn* column);
-	GArrowField* garrow_column_get_field(GArrowColumn* column);
-	ulong garrow_column_get_length(GArrowColumn* column);
-	ulong garrow_column_get_n_nulls(GArrowColumn* column);
-	const(char)* garrow_column_get_name(GArrowColumn* column);
-	GArrowColumn* garrow_column_slice(GArrowColumn* column, ulong offset, ulong length);
-	char* garrow_column_to_string(GArrowColumn* column, GError** err);
 
 	// arrow.CompareOptions
 
@@ -269,6 +267,7 @@ __gshared extern(C)
 	void garrow_decimal128_negate(GArrowDecimal128* decimal);
 	int garrow_decimal128_not_equal(GArrowDecimal128* decimal, GArrowDecimal128* otherDecimal);
 	GArrowDecimal128* garrow_decimal128_plus(GArrowDecimal128* left, GArrowDecimal128* right);
+	GArrowDecimal128* garrow_decimal128_rescale(GArrowDecimal128* decimal, int originalScale, int newScale, GError** err);
 	long garrow_decimal128_to_integer(GArrowDecimal128* decimal);
 	char* garrow_decimal128_to_string(GArrowDecimal128* decimal);
 	char* garrow_decimal128_to_string_scale(GArrowDecimal128* decimal, int scale);
@@ -354,9 +353,8 @@ __gshared extern(C)
 
 	GType garrow_feather_file_reader_get_type();
 	GArrowFeatherFileReader* garrow_feather_file_reader_new(GArrowSeekableInputStream* file, GError** err);
-	GArrowColumn* garrow_feather_file_reader_get_column(GArrowFeatherFileReader* reader, int i, GError** err);
+	GArrowChunkedArray* garrow_feather_file_reader_get_column_data(GArrowFeatherFileReader* reader, int i, GError** err);
 	char* garrow_feather_file_reader_get_column_name(GArrowFeatherFileReader* reader, int i);
-	GList* garrow_feather_file_reader_get_columns(GArrowFeatherFileReader* reader, GError** err);
 	char* garrow_feather_file_reader_get_description(GArrowFeatherFileReader* reader);
 	long garrow_feather_file_reader_get_n_columns(GArrowFeatherFileReader* reader);
 	long garrow_feather_file_reader_get_n_rows(GArrowFeatherFileReader* reader);
@@ -571,6 +569,7 @@ __gshared extern(C)
 	// arrow.IntegerDataType
 
 	GType garrow_integer_data_type_get_type();
+	int garrow_integer_data_type_is_signed(GArrowIntegerDataType* dataType);
 
 	// arrow.JSONReadOptions
 
@@ -582,6 +581,47 @@ __gshared extern(C)
 	GType garrow_json_reader_get_type();
 	GArrowJSONReader* garrow_json_reader_new(GArrowInputStream* input, GArrowJSONReadOptions* options, GError** err);
 	GArrowTable* garrow_json_reader_read(GArrowJSONReader* reader, GError** err);
+
+	// arrow.LargeBinaryArray
+
+	GType garrow_large_binary_array_get_type();
+	GArrowLargeBinaryArray* garrow_large_binary_array_new(long length, GArrowBuffer* valueOffsets, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	GArrowBuffer* garrow_large_binary_array_get_buffer(GArrowLargeBinaryArray* array);
+	GArrowBuffer* garrow_large_binary_array_get_offsets_buffer(GArrowLargeBinaryArray* array);
+	GBytes* garrow_large_binary_array_get_value(GArrowLargeBinaryArray* array, long i);
+
+	// arrow.LargeBinaryArrayBuilder
+
+	GType garrow_large_binary_array_builder_get_type();
+	GArrowLargeBinaryArrayBuilder* garrow_large_binary_array_builder_new();
+	int garrow_large_binary_array_builder_append_null(GArrowLargeBinaryArrayBuilder* builder, GError** err);
+	int garrow_large_binary_array_builder_append_nulls(GArrowLargeBinaryArrayBuilder* builder, long n, GError** err);
+	int garrow_large_binary_array_builder_append_value(GArrowLargeBinaryArrayBuilder* builder, ubyte* value, long length, GError** err);
+	int garrow_large_binary_array_builder_append_value_bytes(GArrowLargeBinaryArrayBuilder* builder, GBytes* value, GError** err);
+	int garrow_large_binary_array_builder_append_values(GArrowLargeBinaryArrayBuilder* builder, GBytes** values, long valuesLength, int* isValids, long isValidsLength, GError** err);
+
+	// arrow.LargeBinaryDataType
+
+	GType garrow_large_binary_data_type_get_type();
+	GArrowLargeBinaryDataType* garrow_large_binary_data_type_new();
+
+	// arrow.LargeStringArray
+
+	GType garrow_large_string_array_get_type();
+	GArrowLargeStringArray* garrow_large_string_array_new(long length, GArrowBuffer* valueOffsets, GArrowBuffer* data, GArrowBuffer* nullBitmap, long nNulls);
+	char* garrow_large_string_array_get_string(GArrowLargeStringArray* array, long i);
+
+	// arrow.LargeStringArrayBuilder
+
+	GType garrow_large_string_array_builder_get_type();
+	GArrowLargeStringArrayBuilder* garrow_large_string_array_builder_new();
+	int garrow_large_string_array_builder_append_string(GArrowLargeStringArrayBuilder* builder, const(char)* value, GError** err);
+	int garrow_large_string_array_builder_append_strings(GArrowLargeStringArrayBuilder* builder, char** values, long valuesLength, int* isValids, long isValidsLength, GError** err);
+
+	// arrow.LargeStringDataType
+
+	GType garrow_large_string_data_type_get_type();
+	GArrowLargeStringDataType* garrow_large_string_data_type_new();
 
 	// arrow.ListArray
 
@@ -681,9 +721,8 @@ __gshared extern(C)
 	GArrowRecordBatch* garrow_record_batch_new(GArrowSchema* schema, uint nRows, GList* columns, GError** err);
 	GArrowRecordBatch* garrow_record_batch_add_column(GArrowRecordBatch* recordBatch, uint i, GArrowField* field, GArrowArray* column, GError** err);
 	int garrow_record_batch_equal(GArrowRecordBatch* recordBatch, GArrowRecordBatch* otherRecordBatch);
-	GArrowArray* garrow_record_batch_get_column(GArrowRecordBatch* recordBatch, int i);
+	GArrowArray* garrow_record_batch_get_column_data(GArrowRecordBatch* recordBatch, int i);
 	const(char)* garrow_record_batch_get_column_name(GArrowRecordBatch* recordBatch, int i);
-	GList* garrow_record_batch_get_columns(GArrowRecordBatch* recordBatch);
 	uint garrow_record_batch_get_n_columns(GArrowRecordBatch* recordBatch);
 	long garrow_record_batch_get_n_rows(GArrowRecordBatch* recordBatch);
 	GArrowSchema* garrow_record_batch_get_schema(GArrowRecordBatch* recordBatch);
@@ -759,6 +798,7 @@ __gshared extern(C)
 	int garrow_schema_equal(GArrowSchema* schema, GArrowSchema* otherSchema);
 	GArrowField* garrow_schema_get_field(GArrowSchema* schema, uint i);
 	GArrowField* garrow_schema_get_field_by_name(GArrowSchema* schema, const(char)* name);
+	int garrow_schema_get_field_index(GArrowSchema* schema, const(char)* name);
 	GList* garrow_schema_get_fields(GArrowSchema* schema);
 	uint garrow_schema_n_fields(GArrowSchema* schema);
 	GArrowSchema* garrow_schema_remove_field(GArrowSchema* schema, uint i, GError** err);
@@ -795,6 +835,8 @@ __gshared extern(C)
 	GType garrow_string_array_builder_get_type();
 	GArrowStringArrayBuilder* garrow_string_array_builder_new();
 	int garrow_string_array_builder_append(GArrowStringArrayBuilder* builder, const(char)* value, GError** err);
+	int garrow_string_array_builder_append_string(GArrowStringArrayBuilder* builder, const(char)* value, GError** err);
+	int garrow_string_array_builder_append_strings(GArrowStringArrayBuilder* builder, char** values, long valuesLength, int* isValids, long isValidsLength, GError** err);
 	int garrow_string_array_builder_append_value(GArrowStringArrayBuilder* builder, const(char)* value, GError** err);
 	int garrow_string_array_builder_append_values(GArrowStringArrayBuilder* builder, char** values, long valuesLength, int* isValids, long isValidsLength, GError** err);
 
@@ -834,20 +876,19 @@ __gshared extern(C)
 	// arrow.Table
 
 	GType garrow_table_get_type();
-	GArrowTable* garrow_table_new(GArrowSchema* schema, GList* columns);
 	GArrowTable* garrow_table_new_arrays(GArrowSchema* schema, GArrowArray** arrays, size_t nArrays, GError** err);
-	GArrowTable* garrow_table_new_columns(GArrowSchema* schema, GArrowColumn** columns, size_t nColumns, GError** err);
+	GArrowTable* garrow_table_new_chunked_arrays(GArrowSchema* schema, GArrowChunkedArray** chunkedArrays, size_t nChunkedArrays, GError** err);
 	GArrowTable* garrow_table_new_record_batches(GArrowSchema* schema, GArrowRecordBatch** recordBatches, size_t nRecordBatches, GError** err);
 	GArrowTable* garrow_table_new_values(GArrowSchema* schema, GList* values, GError** err);
-	GArrowTable* garrow_table_add_column(GArrowTable* table, uint i, GArrowColumn* column, GError** err);
+	GArrowTable* garrow_table_add_column(GArrowTable* table, uint i, GArrowField* field, GArrowChunkedArray* chunkedArray, GError** err);
 	GArrowTable* garrow_table_concatenate(GArrowTable* table, GList* otherTables, GError** err);
 	int garrow_table_equal(GArrowTable* table, GArrowTable* otherTable);
-	GArrowColumn* garrow_table_get_column(GArrowTable* table, uint i);
+	GArrowChunkedArray* garrow_table_get_column_data(GArrowTable* table, int i);
 	uint garrow_table_get_n_columns(GArrowTable* table);
 	ulong garrow_table_get_n_rows(GArrowTable* table);
 	GArrowSchema* garrow_table_get_schema(GArrowTable* table);
 	GArrowTable* garrow_table_remove_column(GArrowTable* table, uint i, GError** err);
-	GArrowTable* garrow_table_replace_column(GArrowTable* table, uint i, GArrowColumn* column, GError** err);
+	GArrowTable* garrow_table_replace_column(GArrowTable* table, uint i, GArrowField* field, GArrowChunkedArray* chunkedArray, GError** err);
 	GArrowTable* garrow_table_slice(GArrowTable* table, long offset, long length);
 	char* garrow_table_to_string(GArrowTable* table, GError** err);
 

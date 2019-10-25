@@ -113,7 +113,7 @@ public class Int16Array : NumericArray
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The i-th value.
+	 * Returns: The @i-th value.
 	 */
 	public short getValue(long i)
 	{

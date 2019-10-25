@@ -79,7 +79,7 @@ public class Time64Array : NumericArray
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The i-th value.
+	 * Returns: The @i-th value.
 	 *
 	 * Since: 0.7.0
 	 */

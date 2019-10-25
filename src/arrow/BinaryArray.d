@@ -109,7 +109,7 @@ public class BinaryArray : Array
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The i-th value.
+	 * Returns: The @i-th value.
 	 */
 	public Bytes getValue(long i)
 	{

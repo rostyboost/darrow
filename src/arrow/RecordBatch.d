@@ -133,10 +133,12 @@ public class RecordBatch : ObjectG
 	 *         column.
 	 * Returns: The i-th column in the record batch
 	 *     on success, %NULL on out of index.
+	 *
+	 * Since: 1.0.0
 	 */
-	public Array getColumn(int i)
+	public Array getColumnData(int i)
 	{
-		auto p = garrow_record_batch_get_column(gArrowRecordBatch, i);
+		auto p = garrow_record_batch_get_column_data(gArrowRecordBatch, i);
 
 		if(p is null)
 		{
@@ -158,21 +160,6 @@ public class RecordBatch : ObjectG
 	public string getColumnName(int i)
 	{
 		return Str.toString(garrow_record_batch_get_column_name(gArrowRecordBatch, i));
-	}
-
-	/**
-	 * Returns: The columns in the record batch.
-	 */
-	public ListG getColumns()
-	{
-		auto p = garrow_record_batch_get_columns(gArrowRecordBatch);
-
-		if(p is null)
-		{
-			return null;
-		}
-
-		return new ListG(cast(GList*) p, true);
 	}
 
 	/**

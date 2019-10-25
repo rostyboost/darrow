@@ -290,6 +290,36 @@ public class Decimal128 : ObjectG
 	}
 
 	/**
+	 *
+	 * Params:
+	 *     originalScale = A scale to be converted from.
+	 *     newScale = A scale to be converted to.
+	 * Returns: The rescaled decimal or %NULL on error.
+	 *
+	 * Since: 0.15.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public Decimal128 rescale(int originalScale, int newScale)
+	{
+		GError* err = null;
+
+		auto p = garrow_decimal128_rescale(gArrowDecimal128, originalScale, newScale, &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(Decimal128)(cast(GArrowDecimal128*) p, true);
+	}
+
+	/**
 	 * Returns: The 64-bit integer representation of the decimal.
 	 *
 	 * Since: 0.10.0
