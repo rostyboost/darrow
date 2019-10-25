@@ -130,8 +130,9 @@ public class ParquetFile {
 
 
 private struct ColumnValues {
-    static auto get_values(T, bool nullable)(ChunkedArray ca)
+    static auto get_values(T, bool nullable)(ChunkedArray ca_)
     {
+        auto ca = ca_.getChunkedArrayStruct;
         auto n_chunks = garrow_chunked_array_get_n_chunks(ca);
 
         static if(nullable)
@@ -170,7 +171,6 @@ private struct ColumnValues {
         {
             static assert(0, "Unsupported column type.");
         }
-        g_object_unref(ca);
         return res;
     }
 }
