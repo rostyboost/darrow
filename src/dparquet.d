@@ -5,7 +5,6 @@ import arrow.Array;
 import arrow.c.types;
 import arrow.c.functions;
 import arrow.ChunkedArray;
-import arrow.Column;
 import arrow.DoubleArray;
 import arrow.Field : ArrowField = Field;
 import arrow.FloatArray;
@@ -124,16 +123,15 @@ public class ParquetFile {
     {
         if(!col_names.canFind(name))
             throw new Exception("Unknown column name:" ~ name);
-        auto col = _fr.readColumn(_name2index[name]);
-        return ColumnValues.get_values!(T, nullable)(col);
+        auto ca = _fr.readColumnData(_name2index[name]);
+        return ColumnValues.get_values!(T, nullable)(ca);
     }
 }
 
 
 private struct ColumnValues {
-    static auto get_values(T, bool nullable)(Column col)
+    static auto get_values(T, bool nullable)(ChunkedArray ca)
     {
-        auto ca = garrow_column_get_data(col.getColumnStruct);
         auto n_chunks = garrow_chunked_array_get_n_chunks(ca);
 
         static if(nullable)
