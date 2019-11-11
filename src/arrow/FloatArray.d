@@ -113,7 +113,7 @@ public class FloatArray : NumericArray
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The i-th value.
+	 * Returns: The @i-th value.
 	 */
 	public float getValue(long i)
 	{

@@ -1,12 +1,15 @@
 module arrow.Array;
 
+private import arrow.BooleanArray;
 private import arrow.Buffer;
 private import arrow.CastOptions;
+private import arrow.ChunkedArray;
 private import arrow.CountOptions;
 private import arrow.DataType;
 private import arrow.DictionaryArray;
 private import arrow.StructArray;
 private import arrow.TakeOptions;
+private import arrow.UInt64Array;
 private import arrow.c.functions;
 public  import arrow.c.types;
 private import glib.ErrorG;
@@ -164,6 +167,26 @@ public class Array : ObjectG
 	 *
 	 * Params:
 	 *     otherArray = A #GArrowArray to be compared.
+	 * Returns: The string representation of
+	 *     the difference between two arrays as unified format. If there is
+	 *     no difference, the return value is %NULL.
+	 *
+	 *     It should be freed with g_free() when no longer needed.
+	 *
+	 * Since: 0.15.0
+	 */
+	public string diffUnified(Array otherArray)
+	{
+		auto retStr = garrow_array_diff_unified(gArrowArray, (otherArray is null) ? null : otherArray.getArrayStruct());
+
+		scope(exit) Str.freeString(retStr);
+		return Str.toString(retStr);
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     otherArray = A #GArrowArray to be compared.
 	 * Returns: %TRUE if both of them have the same data, %FALSE
 	 *     otherwise.
 	 *
@@ -205,6 +228,37 @@ public class Array : ObjectG
 	public bool equalRange(long startIndex, Array otherArray, long otherStartIndex, long endIndex)
 	{
 		return garrow_array_equal_range(gArrowArray, startIndex, (otherArray is null) ? null : otherArray.getArrayStruct(), otherStartIndex, endIndex) != 0;
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     filter = The values indicates which values should be filtered out.
+	 * Returns: The #GArrowArray filterd
+	 *     with a boolean selection filter. Nulls in the filter will
+	 *     result in nulls in the output.
+	 *
+	 * Since: 0.15.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public Array filter(BooleanArray filter)
+	{
+		GError* err = null;
+
+		auto p = garrow_array_filter(gArrowArray, (filter is null) ? null : filter.getBooleanArrayStruct(), &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(Array)(cast(GArrowArray*) p, true);
 	}
 
 	/**
@@ -281,8 +335,70 @@ public class Array : ObjectG
 	/**
 	 *
 	 * Params:
+	 *     right = A right hand side #GArrowArray.
+	 * Returns: The #GArrowBooleanArray
+	 *     showing whether each element in the left array is contained
+	 *     in right array.
+	 *
+	 * Since: 0.15.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public BooleanArray isIn(Array right)
+	{
+		GError* err = null;
+
+		auto p = garrow_array_is_in(gArrowArray, (right is null) ? null : right.getArrayStruct(), &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(BooleanArray)(cast(GArrowBooleanArray*) p, true);
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     right = A right hand side #GArrowChunkedArray.
+	 * Returns: The #GArrowBooleanArray
+	 *     showing whether each element in the left array is contained
+	 *     in right chunked array.
+	 *
+	 * Since: 0.15.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public BooleanArray isInChunkedArray(ChunkedArray right)
+	{
+		GError* err = null;
+
+		auto p = garrow_array_is_in_chunked_array(gArrowArray, (right is null) ? null : right.getChunkedArrayStruct(), &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(BooleanArray)(cast(GArrowBooleanArray*) p, true);
+	}
+
+	/**
+	 *
+	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: Whether the i-th value is null or not.
+	 * Returns: Whether the @i-th value is null or not.
 	 *
 	 * Since: 0.3.0
 	 */
@@ -295,7 +411,7 @@ public class Array : ObjectG
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: Whether the i-th value is valid (not null) or not.
+	 * Returns: Whether the @i-th value is valid (not null) or not.
 	 *
 	 * Since: 0.8.0
 	 */
@@ -323,6 +439,33 @@ public class Array : ObjectG
 		}
 
 		return ObjectG.getDObject!(Array)(cast(GArrowArray*) p, true);
+	}
+
+	/**
+	 * Returns: The indices that would sort
+	 *     an array on success, %NULL on error.
+	 *
+	 * Since: 0.15.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public UInt64Array sortToIndices()
+	{
+		GError* err = null;
+
+		auto p = garrow_array_sort_to_indices(gArrowArray, &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(UInt64Array)(cast(GArrowUInt64Array*) p, true);
 	}
 
 	/**
@@ -393,6 +536,37 @@ public class Array : ObjectG
 		GError* err = null;
 
 		auto p = garrow_array_unique(gArrowArray, &err);
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		if(p is null)
+		{
+			return null;
+		}
+
+		return ObjectG.getDObject!(Array)(cast(GArrowArray*) p, true);
+	}
+
+	/**
+	 *
+	 * Params:
+	 *     returnType = A #GArrowDataType of the returned view.
+	 * Returns: A zero-copy view of this array
+	 *     with the given type. This method checks if the `return_type` are
+	 *     layout-compatible.
+	 *
+	 * Since: 0.15.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public Array view(DataType returnType)
+	{
+		GError* err = null;
+
+		auto p = garrow_array_view(gArrowArray, (returnType is null) ? null : returnType.getDataTypeStruct(), &err);
 
 		if (err !is null)
 		{

@@ -149,6 +149,19 @@ public class Schema : ObjectG
 	}
 
 	/**
+	 *
+	 * Params:
+	 *     name = The name of the field to be found.
+	 * Returns: The index of the found field, -1 on not found.
+	 *
+	 * Since: 1.0.0
+	 */
+	public int getFieldIndex(string name)
+	{
+		return garrow_schema_get_field_index(gArrowSchema, Str.toStringz(name));
+	}
+
+	/**
 	 * Returns: The fields of the schema.
 	 */
 	public ListG getFields()

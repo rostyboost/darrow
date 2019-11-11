@@ -141,26 +141,6 @@ public enum GArrowError
 	 */
 	SERIALIZATION = 11,
 	/**
-	 * Python error.
-	 */
-	PYTHON = 12,
-	/**
-	 * Object already exists on Plasma.
-	 */
-	PLASMA_OBJECT_EXISTS = 20,
-	/**
-	 * Object doesn't exist on Plasma.
-	 */
-	PLASMA_OBJECT_NONEXISTENT = 21,
-	/**
-	 * Store full error on Plasma.
-	 */
-	PLASMA_STORE_FULL = 22,
-	/**
-	 * Object already sealed on Plasma.
-	 */
-	PLASMA_OBJECT_ALREADY_SEALED = 23,
-	/**
 	 * Error generating code for expression evaluation
 	 * in Gandiva.
 	 */
@@ -173,6 +153,10 @@ public enum GArrowError
 	 * Execution error while evaluating the expression against a record batch.
 	 */
 	EXECUTION = 42,
+	/**
+	 * Item already exists error.
+	 */
+	ALREADY_EXISTS = 45,
 }
 alias GArrowError Error;
 
@@ -377,6 +361,31 @@ public enum GArrowType
 	 * Dictionary aka Category type.
 	 */
 	DICTIONARY = 26,
+	/**
+	 * A repeated struct logical type.
+	 */
+	MAP = 27,
+	/**
+	 * Custom data type, implemented by user.
+	 */
+	EXTENSION = 28,
+	/**
+	 * Fixed size list of some logical type.
+	 */
+	FIXED_SIZE_LIST = 29,
+	/**
+	 * Measure of elapsed time in either seconds,
+	 * milliseconds, microseconds or nanoseconds.
+	 */
+	DURATION = 30,
+	/**
+	 * 64bit offsets UTF-8 variable-length string.
+	 */
+	LARGE_STRING = 31,
+	/**
+	 * 64bit offsets Variable-length bytes (no guarantee of UTF-8-ness).
+	 */
+	LARGE_BINARY = 32,
 }
 alias GArrowType Type;
 
@@ -536,16 +545,6 @@ struct GArrowCodec
 }
 
 struct GArrowCodecClass
-{
-	GObjectClass parentClass;
-}
-
-struct GArrowColumn
-{
-	GObject parentInstance;
-}
-
-struct GArrowColumnClass
 {
 	GObjectClass parentClass;
 }
@@ -1084,6 +1083,66 @@ struct GArrowJSONReaderClass
 	GObjectClass parentClass;
 }
 
+struct GArrowLargeBinaryArray
+{
+	GArrowArray parentInstance;
+}
+
+struct GArrowLargeBinaryArrayBuilder
+{
+	GArrowArrayBuilder parentInstance;
+}
+
+struct GArrowLargeBinaryArrayBuilderClass
+{
+	GArrowArrayBuilderClass parentClass;
+}
+
+struct GArrowLargeBinaryArrayClass
+{
+	GArrowArrayClass parentClass;
+}
+
+struct GArrowLargeBinaryDataType
+{
+	GArrowDataType parentInstance;
+}
+
+struct GArrowLargeBinaryDataTypeClass
+{
+	GArrowDataTypeClass parentClass;
+}
+
+struct GArrowLargeStringArray
+{
+	GArrowLargeBinaryArray parentInstance;
+}
+
+struct GArrowLargeStringArrayBuilder
+{
+	GArrowLargeBinaryArrayBuilder parentInstance;
+}
+
+struct GArrowLargeStringArrayBuilderClass
+{
+	GArrowLargeBinaryArrayBuilderClass parentClass;
+}
+
+struct GArrowLargeStringArrayClass
+{
+	GArrowLargeBinaryArrayClass parentClass;
+}
+
+struct GArrowLargeStringDataType
+{
+	GArrowLargeBinaryDataType parentInstance;
+}
+
+struct GArrowLargeStringDataTypeClass
+{
+	GArrowLargeBinaryDataTypeClass parentClass;
+}
+
 struct GArrowListArray
 {
 	GArrowArray parentInstance;
@@ -1370,12 +1429,12 @@ struct GArrowStringArrayClass
 
 struct GArrowStringDataType
 {
-	GArrowDataType parentInstance;
+	GArrowBinaryDataType parentInstance;
 }
 
 struct GArrowStringDataTypeClass
 {
-	GArrowDataTypeClass parentClass;
+	GArrowBinaryDataTypeClass parentClass;
 }
 
 struct GArrowStructArray
@@ -1709,7 +1768,7 @@ struct GArrowWritableInterface;
 /**
  * The major version.
  */
-enum VERSION_MAJOR = 0;
+enum VERSION_MAJOR = 1;
 alias GARROW_VERSION_MAJOR = VERSION_MAJOR;
 
 /**
@@ -1721,12 +1780,12 @@ alias GARROW_VERSION_MICRO = VERSION_MICRO;
 /**
  * The minor version.
  */
-enum VERSION_MINOR = 14;
+enum VERSION_MINOR = 0;
 alias GARROW_VERSION_MINOR = VERSION_MINOR;
 
 /**
  * The version tag. Normally, it's an empty string. It's "SNAPSHOT"
  * for snapshot version.
  */
-enum VERSION_TAG = "";
+enum VERSION_TAG = "SNAPSHOT";
 alias GARROW_VERSION_TAG = VERSION_TAG;

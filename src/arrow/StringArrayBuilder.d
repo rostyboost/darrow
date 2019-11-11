@@ -95,6 +95,71 @@ public class StringArrayBuilder : BinaryArrayBuilder
 	 *     value = A string value.
 	 * Returns: %TRUE on success, %FALSE if there was an error.
 	 *
+	 * Since: 1.0.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public bool appendString(string value)
+	{
+		GError* err = null;
+
+		auto p = garrow_string_array_builder_append_string(gArrowStringArrayBuilder, Str.toStringz(value), &err) != 0;
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		return p;
+	}
+
+	/**
+	 * Append multiple values at once. It's more efficient than multiple
+	 * `append()` and `append_null()` calls.
+	 *
+	 * Params:
+	 *     values = The array of strings.
+	 *     isValids = The array of
+	 *         boolean that shows whether the Nth value is valid or not. If the
+	 *         Nth @is_valids is %TRUE, the Nth @values is valid value. Otherwise
+	 *         the Nth value is null value.
+	 *
+	 * Returns: %TRUE on success, %FALSE if there was an error.
+	 *
+	 * Since: 1.0.0
+	 *
+	 * Throws: GException on failure.
+	 */
+	public bool appendStrings(string[] values, bool[] isValids)
+	{
+		int[] isValidsArray = new int[isValids.length];
+		for ( int i = 0; i < isValids.length; i++ )
+		{
+			isValidsArray[i] = isValids[i] ? 1 : 0;
+		}
+
+		GError* err = null;
+
+		auto p = garrow_string_array_builder_append_strings(gArrowStringArrayBuilder, Str.toStringzArray(values), cast(long)values.length, isValidsArray.ptr, cast(long)isValids.length, &err) != 0;
+
+		if (err !is null)
+		{
+			throw new GException( new ErrorG(err) );
+		}
+
+		return p;
+	}
+
+	/**
+	 *
+	 *
+	 * Deprecated: Use garrow_string_array_builder_append_string() instead.
+	 *
+	 * Params:
+	 *     value = A string value.
+	 *
+	 * Returns: %TRUE on success, %FALSE if there was an error.
+	 *
 	 * Since: 0.12.0
 	 *
 	 * Throws: GException on failure.
@@ -117,12 +182,13 @@ public class StringArrayBuilder : BinaryArrayBuilder
 	 * Append multiple values at once. It's more efficient than multiple
 	 * `append()` and `append_null()` calls.
 	 *
+	 * Deprecated: Use garrow_string_array_builder_append_strings() instead.
+	 *
 	 * Params:
-	 *     values = The array of
-	 *         strings.
+	 *     values = The array of strings.
 	 *     isValids = The array of
 	 *         boolean that shows whether the Nth value is valid or not. If the
-	 *         Nth `is_valids` is %TRUE, the Nth `values` is valid value. Otherwise
+	 *         Nth @is_valids is %TRUE, the Nth @values is valid value. Otherwise
 	 *         the Nth value is null value.
 	 *
 	 * Returns: %TRUE on success, %FALSE if there was an error.

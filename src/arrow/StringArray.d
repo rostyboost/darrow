@@ -79,7 +79,7 @@ public class StringArray : BinaryArray
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The i-th UTF-8 encoded string.
+	 * Returns: The @i-th UTF-8 encoded string.
 	 */
 	public string getString(long i)
 	{

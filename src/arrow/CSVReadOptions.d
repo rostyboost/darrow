@@ -65,6 +65,12 @@ public class CSVReadOptions : ObjectG
 		this(cast(GArrowCSVReadOptions*) p, true);
 	}
 
+	/** */
+	public void addColumnName(string columnName)
+	{
+		garrow_csv_read_options_add_column_name(gArrowCSVReadOptions, Str.toStringz(columnName));
+	}
+
 	/**
 	 * Add value type of a column.
 	 *
@@ -108,6 +114,21 @@ public class CSVReadOptions : ObjectG
 	public void addTrueValue(string trueValue)
 	{
 		garrow_csv_read_options_add_true_value(gArrowCSVReadOptions, Str.toStringz(trueValue));
+	}
+
+	/**
+	 * Returns: The column names. It's a %NULL-terminated string array.
+	 *     If the number of values is zero, this returns %NULL.
+	 *     It must be freed with g_strfreev() when no longer needed.
+	 *
+	 * Since: 1.0.0
+	 */
+	public string[] getColumnNames()
+	{
+		auto retStr = garrow_csv_read_options_get_column_names(gArrowCSVReadOptions);
+
+		scope(exit) Str.freeStringArray(retStr);
+		return Str.toStringArray(retStr);
 	}
 
 	/**
@@ -170,6 +191,12 @@ public class CSVReadOptions : ObjectG
 
 		scope(exit) Str.freeStringArray(retStr);
 		return Str.toStringArray(retStr);
+	}
+
+	/** */
+	public void setColumnNames(string[] columnNames)
+	{
+		garrow_csv_read_options_set_column_names(gArrowCSVReadOptions, Str.toStringzArray(columnNames), cast(size_t)columnNames.length);
 	}
 
 	/** */

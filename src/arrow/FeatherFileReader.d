@@ -1,6 +1,6 @@
 module arrow.FeatherFileReader;
 
-private import arrow.Column;
+private import arrow.ChunkedArray;
 private import arrow.SeekableInputStream;
 private import arrow.Table;
 private import arrow.c.functions;
@@ -8,7 +8,6 @@ public  import arrow.c.types;
 private import glib.ConstructionException;
 private import glib.ErrorG;
 private import glib.GException;
-private import glib.ListG;
 private import glib.Str;
 private import gobject.ObjectG;
 
@@ -83,18 +82,20 @@ public class FeatherFileReader : ObjectG
 	/**
 	 *
 	 * Params:
-	 *     i = The index of the target column.
-	 * Returns: The i-th column in the file or %NULL on error.
+	 *     i = The index of the target column. If it's negative, index is
+	 *         counted backward from the end of the columns. `-1` means the last
+	 *         column.
+	 * Returns: The i-th column's data in the file or %NULL on error.
 	 *
-	 * Since: 0.4.0
+	 * Since: 1.0.0
 	 *
 	 * Throws: GException on failure.
 	 */
-	public Column getColumn(int i)
+	public ChunkedArray getColumnData(int i)
 	{
 		GError* err = null;
 
-		auto p = garrow_feather_file_reader_get_column(gArrowFeatherFileReader, i, &err);
+		auto p = garrow_feather_file_reader_get_column_data(gArrowFeatherFileReader, i, &err);
 
 		if (err !is null)
 		{
@@ -106,13 +107,15 @@ public class FeatherFileReader : ObjectG
 			return null;
 		}
 
-		return ObjectG.getDObject!(Column)(cast(GArrowColumn*) p, true);
+		return ObjectG.getDObject!(ChunkedArray)(cast(GArrowChunkedArray*) p, true);
 	}
 
 	/**
 	 *
 	 * Params:
-	 *     i = The index of the target column.
+	 *     i = The index of the target column. If it's negative, index is
+	 *         counted backward from the end of the columns. `-1` means the last
+	 *         column.
 	 * Returns: The i-th column name in the file.
 	 *
 	 *     It should be freed with g_free() when no longer needed.
@@ -125,32 +128,6 @@ public class FeatherFileReader : ObjectG
 
 		scope(exit) Str.freeString(retStr);
 		return Str.toString(retStr);
-	}
-
-	/**
-	 * Returns: The columns in the file.
-	 *
-	 * Since: 0.4.0
-	 *
-	 * Throws: GException on failure.
-	 */
-	public ListG getColumns()
-	{
-		GError* err = null;
-
-		auto p = garrow_feather_file_reader_get_columns(gArrowFeatherFileReader, &err);
-
-		if (err !is null)
-		{
-			throw new GException( new ErrorG(err) );
-		}
-
-		if(p is null)
-		{
-			return null;
-		}
-
-		return new ListG(cast(GList*) p, true);
 	}
 
 	/**

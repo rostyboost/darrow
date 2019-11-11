@@ -40,4 +40,14 @@ public class IntegerDataType : NumericDataType
 	{
 		return garrow_integer_data_type_get_type();
 	}
+
+	/**
+	 * Returns: %TRUE if the data type is signed, %FALSE otherwise.
+	 *
+	 * Since: 1.0.0
+	 */
+	public bool isSigned()
+	{
+		return garrow_integer_data_type_is_signed(gArrowIntegerDataType) != 0;
+	}
 }

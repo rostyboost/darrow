@@ -48,7 +48,7 @@ public class Decimal128Array : FixedSizeBinaryArray
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The formatted i-th value.
+	 * Returns: The formatted @i-th value.
 	 *
 	 *     The returned string should be freed with g_free() when no longer
 	 *     needed.
@@ -67,7 +67,7 @@ public class Decimal128Array : FixedSizeBinaryArray
 	 *
 	 * Params:
 	 *     i = The index of the target value.
-	 * Returns: The i-th value.
+	 * Returns: The @i-th value.
 	 *
 	 * Since: 0.10.0
 	 */
