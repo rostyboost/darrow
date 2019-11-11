@@ -4,4 +4,4 @@ Automatically generated from the [Arrow GLib](https://github.com/apache/arrow/tr
 
 A more efficient Parquet read implementation bypassing `GObject` abstractions is provided in [dparquet.d](https://github.com/rostyboost/darrow/blob/master/src/dparquet.d).
 
-Current Arrow version: `0.14.0`
+Current Arrow version: `0.15.1`
